@@ -3,6 +3,9 @@ bin/
 image-fetcher
 dist/
 
+# Generated Windows PE resources
+*.syso
+
 # OS
 .DS_Store
 Thumbs.db

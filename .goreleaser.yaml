@@ -9,6 +9,11 @@ version: 2
 
 project_name: curio
 
+before:
+  hooks:
+    - go install github.com/tc-hib/go-winres@latest
+    - ./scripts/gen-winres.sh {{ .Version }}
+
 builds:
   - id: curio
     main: ./cmd/curio
