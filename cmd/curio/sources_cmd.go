@@ -55,18 +55,5 @@ func runSources(asJSON bool) {
 			mark = termYellow() + "✗" + termReset()
 		}
 		fmt.Printf("  %s %-14s %s\n", mark, info.Name, info.Description)
-		fmt.Printf("    subjects: %s\n", joinTags(info.Subjects))
-		fmt.Printf("    licenses: %s\n", joinTags(info.Licenses))
 	}
-}
-
-func joinTags(tags []string) string {
-	if len(tags) == 0 {
-		return ""
-	}
-	result := tags[0]
-	for i := 1; i < len(tags); i++ {
-		result += ", " + tags[i]
-	}
-	return result
 }
