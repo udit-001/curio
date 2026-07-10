@@ -13,28 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
 
-      - name: Build all platforms
-        run: |
-          VERSION=${GITHUB_REF_NAME}
-          LDFLAGS="-s -w -X main.version=${VERSION}"
-          mkdir -p dist
-          for PLATFORM in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
-            GOOS="${PLATFORM%/*}"
-            GOARCH="${PLATFORM#*/}"
-            echo "Building ${GOOS}/${GOARCH}..."
-            CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" \
-              go build -trimpath -ldflags "$LDFLAGS" \
-              -o "dist/curio-${GOOS}-${GOARCH}" ./cmd/curio
-            chmod +x "dist/curio-${GOOS}-${GOARCH}"
-          done
-
-      - name: Create release
-        uses: softprops/action-gh-release@v2
+      - uses: goreleaser/goreleaser-action@v6
         with:
-          generate_release_notes: true
-          files: dist/curio-*
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

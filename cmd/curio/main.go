@@ -4,11 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime/debug"
 	"strings"
 )
 
-var version = "2.0.0-dev"
+var (
+	version = "dev"
+	commit  = ""
+	date    = ""
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -296,17 +299,6 @@ Options:
 }
 
 func printVersion() {
-	commit, date := "", ""
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, s := range info.Settings {
-			switch s.Key {
-			case "vcs.revision":
-				commit = s.Value[:12]
-			case "vcs.time":
-				date = s.Value[:10]
-			}
-		}
-	}
 	fmt.Printf("curio %s", version)
 	if commit != "" {
 		fmt.Printf(" (commit: %s, built: %s)", commit, date)
