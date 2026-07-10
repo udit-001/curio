@@ -11,7 +11,7 @@ make check
 
 ## Architecture
 
-The `Source` interface in `source.go` is the single seam. Every source implements it and registers itself in the `sources` map via `init()`. The dispatch in `main.go` looks up the source by name and calls `Search()`. Tests call `Search()` through the interface — no other seam.
+The `Source` interface in `source.go` is the single seam. Every source implements it and registers itself in the `sources` map via `init()`. The dispatch in `main.go` looks up the source by name and calls `Search()`.
 
 ```go
 type Source interface {
@@ -25,7 +25,7 @@ type Source interface {
 }
 ```
 
-Key files: `source.go` (interface + registry), `config.go` (TOML config at OS-standard dirs), `http.go` (retry/backoff + `httpGetJSON`), `download.go` (download + attribution.json), `main.go` (CLI parsing, dispatch, list/download modes), `embed.go` (`//go:embed` of SKILL.md), `setup.go` (interactive key wizard), `install.go` (agent detection + `curio skills install`), `manifest.go` (SHA256 change detection), `sources_cmd.go` (`curio sources` command with metadata), `helpers.go` (shared utilities: `orDefaultStr`, `stripHTML`, `needsCredit`, `licenseFromURL`).
+Key files: `source.go` (interface + registry), `config.go` (TOML config read/write at OS-standard dirs), `http.go` (retry/backoff + `httpGetJSON` + `httpPostForm`), `download.go` (download + attribution.json), `main.go` (CLI parsing, dispatch, list/download modes), `embed.go` (`//go:embed` of SKILL.md), `terminal.go` (terminal color, prompt, browser helpers), `setup.go` (interactive key wizard), `install.go` (agent detection + `curio skills install`), `manifest.go` (SHA256 change detection), `sources_cmd.go` (`curio sources` command with metadata), `helpers.go` (shared utilities: `orDefaultStr`, `stripHTML`, `needsCredit`, `licenseFromURL`, `isCC0orPD`, `base64Encode`).
 
 ## Adding a source
 

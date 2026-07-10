@@ -26,7 +26,7 @@ func (s *WellcomeSource) Licenses() []string {
 }
 
 func (s *WellcomeSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
-	if licenseTier == "cc0,pd" {
+	if licenseTier == "free" {
 		return s.searchDualLicense(query, count, opts)
 	}
 	return s.searchSingle(query, count, "", opts)

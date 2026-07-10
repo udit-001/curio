@@ -38,7 +38,7 @@ type Source interface {
 	Licenses() []string
 
 	// Search queries the source and returns up to count results.
-	// licenseTier is "cc0,pd" (no attribution) or "any" (include CC-BY etc.).
+	// licenseTier is "free" (no attribution) or "any" (include CC-BY etc.).
 	// opts carries width/full-res options; sources that don't support them ignore them.
 	Search(query string, count int, licenseTier string, opts Opts) ([]Result, error)
 

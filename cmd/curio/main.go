@@ -118,7 +118,7 @@ func parseArgs(args []string) (string, searchOpts, error) {
 	opts := searchOpts{
 		count:       5,
 		source:      "openverse",
-		licenseTier: "cc0,pd",
+		licenseTier: "free",
 		outDir:      "", // empty = create unique temp dir per run
 	}
 
@@ -286,7 +286,7 @@ Usage:
 Options:
   -n N          results (default 5)
   -s SOURCE     source: openverse, nasa, wikimedia, smithsonian, met, loc, wellcome, phylopic, europeana, wikipedia, pexels, pixabay, unsplash, bhl, archive, gbif, va, all
-  -l LICENSE    license: cc0,pd (default) | any
+  -l LICENSE    license: free (default, no attribution) | any
   -w N          max width px
   --full        full-res original
   -d            download to scratch

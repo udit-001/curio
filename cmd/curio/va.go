@@ -84,7 +84,7 @@ func (s *VaSource) Search(query string, count int, licenseTier string, opts Opts
 			}
 		}
 
-		if licenseTier == "cc0,pd" && !isCC0orPD(license, licenseURL) {
+		if licenseTier == "free" && !isCC0orPD(license, licenseURL) {
 			continue
 		}
 

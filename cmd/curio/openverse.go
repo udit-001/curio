@@ -34,7 +34,7 @@ func (s *OpenverseSource) Search(query string, count int, licenseTier string, op
 		"page_size":   {fmt.Sprintf("%d", count)},
 		"filter_dead": {"true"},
 	}
-	if licenseTier == "cc0,pd" {
+	if licenseTier == "free" {
 		params.Set("license", "cc0,pdm")
 	}
 

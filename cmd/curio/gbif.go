@@ -65,7 +65,7 @@ func (s *GbifSource) Search(query string, count int, licenseTier string, opts Op
 		}
 
 		license := licenseFromURL(r.License)
-		if licenseTier == "cc0,pd" && !isCC0orPD(license, r.License) {
+		if licenseTier == "free" && !isCC0orPD(license, r.License) {
 			continue
 		}
 

@@ -66,7 +66,7 @@ func (s *EuropeanaSource) Search(query string, count int, licenseTier string, op
 			license = licenseFromURL(licenseURL)
 		}
 
-		if licenseTier == "cc0,pd" && !isCC0orPD(license, licenseURL) {
+		if licenseTier == "free" && !isCC0orPD(license, licenseURL) {
 			continue
 		}
 

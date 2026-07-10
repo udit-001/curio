@@ -131,7 +131,7 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 	var out []Result
 	for _, p := range pages {
 		licName := p.ii.LicenseShortName
-		if licenseTier == "cc0,pd" && !isCC0orPD(licName, "") {
+		if licenseTier == "free" && !isCC0orPD(licName, "") {
 			continue
 		}
 

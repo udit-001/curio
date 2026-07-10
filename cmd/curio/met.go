@@ -79,7 +79,7 @@ func (s *MetSource) Search(query string, count int, licenseTier string, opts Opt
 		if obj == nil {
 			continue
 		}
-		if licenseTier == "cc0,pd" && !obj.IsPublicDomain {
+		if licenseTier == "free" && !obj.IsPublicDomain {
 			continue
 		}
 
