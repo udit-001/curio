@@ -10,6 +10,14 @@ import (
 	"strings"
 )
 
+// manifestEntry embeds Result so the manifest can't drift from the Result struct.
+// Adding a field to Result automatically appears in attribution.json.
+type manifestEntry struct {
+	Result
+	Filename string `json:"filename"`
+	Bytes    int    `json:"bytes"`
+}
+
 // download fetches all result images to outDir and writes attribution.json.
 // If outDir is empty, creates a unique temp dir so parallel calls don't clobber each other.
 // When quiet is true, suppresses progress output and prints only the dir and manifest paths.
@@ -32,49 +40,20 @@ func download(results []Result, outDir string, quiet bool) (manifest []map[strin
 	if !quiet {
 		fmt.Printf("Downloading %d image(s) to %s/\n", len(results), outDir)
 	}
+
+	var entries []manifestEntry
 	for i, r := range results {
 		if r.ImageURL == "" {
 			continue
 		}
-		resp, err := httpGet(r.ImageURL, nil)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "  ! download failed %s: %v\n", r.ImageURL, err)
+		fname, size, ok := saveImage(r, outDir, i+1)
+		if !ok {
 			continue
 		}
-		data, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "  ! read failed %s: %v\n", r.ImageURL, err)
-			continue
-		}
-
-		ext := extFor(r.ImageURL, resp.Header.Get("Content-Type"))
-		fname := fmt.Sprintf("%02d_%s.%s", i+1, slugify(r.Title), ext)
-		outPath := filepath.Join(outDir, fname)
-		if err := os.WriteFile(outPath, data, 0644); err != nil {
-			fmt.Fprintf(os.Stderr, "  ! write failed %s: %v\n", outPath, err)
-			continue
-		}
-
-		entry := map[string]any{
-			"source":      r.Source,
-			"title":       r.Title,
-			"creator":     r.Creator,
-			"creator_url": r.CreatorURL,
-			"license":     r.License,
-			"license_url": r.LicenseURL,
-			"attribution": r.Attribution,
-			"image_url":   r.ImageURL,
-			"landing_url": r.LandingURL,
-			"width":       r.Width,
-			"height":      r.Height,
-			"filename":    fname,
-			"bytes":       len(data),
-		}
-		manifest = append(manifest, entry)
+		entries = append(entries, manifestEntry{Result: r, Filename: fname, Bytes: size})
 
 		if !quiet {
-			fmt.Printf("  + %s  (%d KB)  [%s]\n", fname, len(data)/1024, r.License)
+			fmt.Printf("  + %s  (%d KB)  [%s]\n", fname, size/1024, r.License)
 			if needsCredit(r.License) {
 				fmt.Println("    attribution required — see attribution.json")
 			}
@@ -82,7 +61,7 @@ func download(results []Result, outDir string, quiet bool) (manifest []map[strin
 	}
 
 	manifestPath := filepath.Join(outDir, "attribution.json")
-	mdata, _ := json.MarshalIndent(manifest, "", "  ")
+	mdata, _ := json.MarshalIndent(entries, "", "  ")
 	_ = os.WriteFile(manifestPath, mdata, 0644)
 
 	if quiet {
@@ -92,7 +71,40 @@ func download(results []Result, outDir string, quiet bool) (manifest []map[strin
 		fmt.Printf("\nSCRATCH: %s\n", outDir)
 		fmt.Printf("attribution: %s\n", manifestPath)
 	}
+
+	// Convert to []map[string]any for the return value (callers may expect this type)
+	for _, e := range entries {
+		raw, _ := json.Marshal(e)
+		var m map[string]any
+		json.Unmarshal(raw, &m)
+		manifest = append(manifest, m)
+	}
 	return manifest, outDir, nil
+}
+
+// saveImage fetches a single result's image and writes it to dir.
+// Returns the filename, byte count, and success flag.
+func saveImage(r Result, dir string, idx int) (filename string, size int, ok bool) {
+	resp, err := httpGet(r.ImageURL, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  ! download failed %s: %v\n", r.ImageURL, err)
+		return "", 0, false
+	}
+	data, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "  ! read failed %s: %v\n", r.ImageURL, err)
+		return "", 0, false
+	}
+
+	ext := extFor(r.ImageURL, resp.Header.Get("Content-Type"))
+	filename = fmt.Sprintf("%02d_%s.%s", idx, slugify(r.Title), ext)
+	outPath := filepath.Join(dir, filename)
+	if err := os.WriteFile(outPath, data, 0644); err != nil {
+		fmt.Fprintf(os.Stderr, "  ! write failed %s: %v\n", outPath, err)
+		return "", 0, false
+	}
+	return filename, len(data), true
 }
 
 var extRe = regexp.MustCompile(`\.(jpe?g|png|gif|webp|svg|tiff?)$`)
