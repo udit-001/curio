@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 // ---- GBIF Source ----
@@ -66,7 +65,7 @@ func (s *GbifSource) Search(query string, count int, licenseTier string, opts Op
 		}
 
 		license := licenseFromURL(r.License)
-		if licenseTier == "cc0,pd" && !strings.Contains(strings.ToLower(r.License), "publicdomain") {
+		if licenseTier == "cc0,pd" && !isCC0orPD(license, r.License) {
 			continue
 		}
 

@@ -131,13 +131,8 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 	var out []Result
 	for _, p := range pages {
 		licName := p.ii.LicenseShortName
-		if licenseTier == "cc0,pd" {
-			low := strings.ToLower(licName)
-			if !strings.Contains(low, "public domain") &&
-				!strings.Contains(low, "cc0") &&
-				low != "pd" && low != "pdm" {
-				continue
-			}
+		if licenseTier == "cc0,pd" && !isCC0orPD(licName, "") {
+			continue
 		}
 
 		var imgURL string

@@ -108,7 +108,8 @@ func (s *PhyloPicSource) Search(query string, count int, licenseTier string, opt
 		}
 
 		licenseURL := img.Links.License.Href
-		if licenseTier == "cc0,pd" && !strings.Contains(licenseURL, "publicdomain") {
+		license := licenseFromURL(licenseURL)
+		if licenseTier == "cc0,pd" && !isCC0orPD(license, licenseURL) {
 			continue
 		}
 
@@ -121,8 +122,6 @@ func (s *PhyloPicSource) Search(query string, count int, licenseTier string, opt
 		if title == "" {
 			title = nodeName(item.Names)
 		}
-
-		license := licenseFromURL(licenseURL)
 
 		out = append(out, Result{
 			Source:      "phylopic",

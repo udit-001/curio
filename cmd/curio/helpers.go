@@ -25,6 +25,16 @@ func needsCredit(licenseStr string) bool {
 	return !noAttrib
 }
 
+// isCC0orPD returns true if the license is CC0 or Public Domain.
+// Checks both the license name and the license URL for public domain markers.
+func isCC0orPD(license, licenseURL string) bool {
+	if !needsCredit(license) {
+		return true
+	}
+	lower := strings.ToLower(licenseURL)
+	return strings.Contains(lower, "publicdomain")
+}
+
 func orDefaultStr(s, def string) string {
 	if s == "" {
 		return def

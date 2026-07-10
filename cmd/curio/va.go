@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 // ---- V&A Museum Source ----
@@ -79,14 +78,13 @@ func (s *VaSource) Search(query string, count int, licenseTier string, opts Opts
 		licenseURL := ""
 		if r.Rights != "" {
 			license = r.Rights
-			low := strings.ToLower(r.Rights)
-			if strings.Contains(low, "cc0") || strings.Contains(low, "public domain") {
+			if isCC0orPD(r.Rights, "") {
 				license = "CC0"
 				licenseURL = "https://creativecommons.org/publicdomain/zero/1.0/"
 			}
 		}
 
-		if licenseTier == "cc0,pd" && license != "CC0" {
+		if licenseTier == "cc0,pd" && !isCC0orPD(license, licenseURL) {
 			continue
 		}
 

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/url"
-	"strings"
 )
 
 // ---- Europeana Source ----
@@ -70,7 +69,7 @@ func (s *EuropeanaSource) Search(query string, count int, licenseTier string, op
 			license = licenseFromURL(licenseURL)
 		}
 
-		if licenseTier == "cc0,pd" && !strings.Contains(strings.ToLower(licenseURL), "publicdomain") {
+		if licenseTier == "cc0,pd" && !isCC0orPD(license, licenseURL) {
 			continue
 		}
 
