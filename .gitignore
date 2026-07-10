@@ -1,0 +1,13 @@
+# Binaries
+bin/
+image-fetcher
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
