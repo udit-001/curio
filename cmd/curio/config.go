@@ -134,6 +134,32 @@ func configGet(key string) string {
 	return configData[key]
 }
 
+// configSet upserts a "section.key"=value into config.toml and refreshes the cache.
+func configSet(key, value string) {
+	_ = os.MkdirAll(configDirPath, 0755)
+	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
+		_ = os.WriteFile(ConfigPath, []byte{}, 0600)
+	}
+
+	raw := map[string]map[string]string{}
+	if data, err := os.ReadFile(ConfigPath); err == nil {
+		toml.Unmarshal(data, &raw)
+	}
+
+	parts := strings.SplitN(key, ".", 2)
+	if len(parts) != 2 {
+		return
+	}
+	section, field := parts[0], parts[1]
+	if raw[section] == nil {
+		raw[section] = map[string]string{}
+	}
+	raw[section][field] = value
+
+	writeToml(raw)
+	refreshConfig()
+}
+
 // writeToml marshals a map[string]map[string]string to config.toml.
 func writeToml(raw map[string]map[string]string) {
 	_ = os.MkdirAll(configDirPath, 0755)

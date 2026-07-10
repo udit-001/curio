@@ -13,8 +13,6 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
-
-	"github.com/pelletier/go-toml/v2"
 )
 
 // ---- Terminal helpers ----
@@ -215,38 +213,6 @@ func restoreStdin(state interface{}) {
 	}
 }
 
-// writeEnvKey upserts a "section.key"=value into config.toml.
-func writeEnvKey(key, value string) {
-	touchConfigFile()
-
-	// Parse existing TOML
-	raw := map[string]map[string]string{}
-	if data, err := os.ReadFile(ConfigPath); err == nil {
-		toml.Unmarshal(data, &raw)
-	}
-
-	parts := strings.SplitN(key, ".", 2)
-	if len(parts) != 2 {
-		return
-	}
-	section, field := parts[0], parts[1]
-	if raw[section] == nil {
-		raw[section] = map[string]string{}
-	}
-	raw[section][field] = value
-
-	writeToml(raw)
-	refreshConfig()
-	success(fmt.Sprintf("wrote %s → %s", key, ConfigPath))
-}
-
-func touchConfigFile() {
-	_ = os.MkdirAll(configDirPath, 0755)
-	if _, err := os.Stat(ConfigPath); os.IsNotExist(err) {
-		_ = os.WriteFile(ConfigPath, []byte{}, 0600)
-	}
-}
-
 // ---- Stage table ----
 
 type stageConfig struct {
@@ -418,7 +384,7 @@ func runStage(s stageConfig, stageIdx, totalStages, minutesElapsed, totalMinutes
 
 	// Write username if applicable
 	if s.userPrompt != "" {
-		writeEnvKey(s.userKey, userVal)
+		configSet(s.userKey, userVal)
 	}
 
 	// Test the key
@@ -426,9 +392,9 @@ func runStage(s stageConfig, stageIdx, totalStages, minutesElapsed, totalMinutes
 		note("Testing key...")
 		if err := s.testFunc(apiKey); err != nil {
 			warn(fmt.Sprintf("Key test failed — saving anyway. (%v)", err))
-			writeEnvKey(secretKey, apiKey)
+			configSet(secretKey, apiKey)
 		} else {
-			writeEnvKey(secretKey, apiKey)
+			configSet(secretKey, apiKey)
 			msg := s.successNote
 			if msg == "" {
 				msg = fmt.Sprintf("Key verified — %s unlocked.", s.name)
@@ -436,7 +402,7 @@ func runStage(s stageConfig, stageIdx, totalStages, minutesElapsed, totalMinutes
 			success(msg)
 		}
 	} else {
-		writeEnvKey(secretKey, apiKey)
+		configSet(secretKey, apiKey)
 		msg := s.successNote
 		if msg == "" {
 			msg = fmt.Sprintf("Credentials saved — %s configured.", s.name)
@@ -649,8 +615,8 @@ func runSetup() {
 					})
 					if err != nil {
 						warn(fmt.Sprintf("Token exchange failed: %v", err))
-						writeEnvKey("openverse.client_id", reg.ClientID)
-						writeEnvKey("openverse.client_secret", reg.ClientSecret)
+						configSet("openverse.client_id", reg.ClientID)
+						configSet("openverse.client_secret", reg.ClientSecret)
 					} else {
 						var tok struct {
 							AccessToken string `json:"access_token"`
@@ -659,13 +625,13 @@ func runSetup() {
 						tokenResp.Body.Close()
 
 						if tok.AccessToken != "" {
-							writeEnvKey("openverse.client_id", reg.ClientID)
-							writeEnvKey("openverse.client_secret", reg.ClientSecret)
+							configSet("openverse.client_id", reg.ClientID)
+							configSet("openverse.client_secret", reg.ClientSecret)
 							success("Credentials verified — 10,000 requests/day unlocked.")
 						} else {
 							warn("Token exchange failed — credentials saved anyway.")
-							writeEnvKey("openverse.client_id", reg.ClientID)
-							writeEnvKey("openverse.client_secret", reg.ClientSecret)
+							configSet("openverse.client_id", reg.ClientID)
+							configSet("openverse.client_secret", reg.ClientSecret)
 						}
 					}
 				}
