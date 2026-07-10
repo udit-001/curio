@@ -26,9 +26,6 @@ func (s *SmithsonianSource) Licenses() []string {
 
 func (s *SmithsonianSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("Smithsonian requires a free api.data.gov key — get one at https://api.data.gov/signup/ and run 'curio setup'")
-	}
 
 	fqs, _ := json.Marshal([]string{"online_media_type:Images"})
 

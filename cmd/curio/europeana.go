@@ -25,9 +25,6 @@ func (s *EuropeanaSource) Licenses() []string {
 
 func (s *EuropeanaSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("Europeana requires a free API key — get one at https://pro.europeana.eu/pages/get-api and run 'curio setup'")
-	}
 
 	params := url.Values{
 		"query":     {query},

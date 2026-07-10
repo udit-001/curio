@@ -25,9 +25,6 @@ func (s *PexelsSource) Licenses() []string {
 
 func (s *PexelsSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("Pexels requires a free API key — get one at https://www.pexels.com/api/new/ and run 'curio setup'")
-	}
 
 	searchURL := "https://api.pexels.com/v1/search?" + url.Values{
 		"query":       {query},

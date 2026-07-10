@@ -25,9 +25,6 @@ func (s *PixabaySource) Licenses() []string {
 
 func (s *PixabaySource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("Pixabay requires a free API key — get one at https://pixabay.com/accounts/register/ and run 'curio setup'")
-	}
 
 	searchURL := "https://pixabay.com/api/?" + url.Values{
 		"key":        {key},

@@ -25,9 +25,6 @@ func (s *UnsplashSource) Licenses() []string {
 
 func (s *UnsplashSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("Unsplash requires a free API key — register an app at https://unsplash.com/oauth/applications and run 'curio setup'")
-	}
 
 	searchURL := "https://api.unsplash.com/search/photos?" + url.Values{
 		"query":    {query},

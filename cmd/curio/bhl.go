@@ -25,9 +25,6 @@ func (s *BhlSource) Licenses() []string {
 
 func (s *BhlSource) Search(query string, count int, licenseTier string, opts Opts) ([]Result, error) {
 	key := configGet(s.KeyName())
-	if key == "" {
-		return nil, fmt.Errorf("BHL requires a free API key — get one at https://www.biodiversitylibrary.org/getapikey.aspx and run 'curio setup'")
-	}
 
 	searchURL := "https://www.biodiversitylibrary.org/api3?" + url.Values{
 		"action": {"BookSearch"},
