@@ -46,10 +46,6 @@ When downloading with `-d`, read `attribution.json` in the scratch dir for struc
 5. **Attribution** — if the placed image is non-CC0, grab the credit line from `scratch/attribution.json` and drop it near the image (a code comment, a `CREDITS` file). If the license is CC0 or public domain, attribution is optional.
    - Done when: the license is surfaced to the user (stated or dropped near the image).
 
-## License default
-
-`-l free` returns only no-attribution-needed images — safe to ship as-is. `-l any` widens to CC-BY etc.; the binary records the credit in `attribution.json` — surface it if easy.
-
 ## When results are thin
 
 Broaden the query, switch source (run `curio sources` to see alternatives), or try `-l any`.

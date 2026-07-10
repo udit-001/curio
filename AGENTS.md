@@ -40,27 +40,11 @@ Key files: `source.go` (interface + registry), `config.go` (TOML config read/wri
 
 ## Config
 
-TOML at OS-standard config directory (`~/.config/curio/` on Linux, `~/Library/Application Support/curio/` on macOS, `%AppData%\curio\` on Windows). See `config.go` for the loading logic. `curio setup` writes keys interactively with live testing.
-
-Key handling: keyless sources work without config. Key-required sources auto-skip in `-s all` and hard-fail when selected explicitly without a key. Run `curio sources` to see which sources need keys.
+TOML at OS-standard config directory (`~/.config/curio/` on Linux, `~/Library/Application Support/curio/` on macOS, `%AppData%\curio\` on Windows). See `config.go` for the loading logic. `curio setup` writes keys interactively with live testing. Run `curio sources` to see which sources need keys.
 
 ## CLI
 
-```
-curio "QUERY" [options]
-curio sources [--json]
-curio setup
-curio skills install [--dir DIR] [--project] [--agents-only] [--claude-only]
-curio version
-```
-
-`curio sources` is the live source of truth for source metadata — description, subjects, licenses, and key status. `--json` for machine-readable output. Only `SKILL.md` is embedded in the binary via `//go:embed`.
-
-Download mode creates a unique temp dir per run (`os.TempDir()/curio/{random}`) so parallel calls don't clobber each other. Previous runs are preserved.
-
-## Design principle
-
-Curio serves **real-world imagery** — photos, paintings, illustrations, maps, specimens. For generated diagrams (molecular structures, function graphs, circuits, geometric figures), generate them directly; curio searches existing images only.
+Run `curio --help` for the full CLI reference. Key commands: `curio "query" [opts]`, `curio sources [--json]`, `curio setup`, `curio skills install`, `curio version`.
 
 ## Sources
 
