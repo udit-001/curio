@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"regexp"
 	"strings"
 )
@@ -40,6 +41,10 @@ func orDefaultStr(s, def string) string {
 		return def
 	}
 	return s
+}
+
+func base64Encode(s string) string {
+	return base64.StdEncoding.EncodeToString([]byte(s))
 }
 
 func licenseFromURL(licenseURL string) string {

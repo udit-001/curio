@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -106,7 +105,7 @@ func (s *OpenverseSource) getToken() string {
 		return cached
 	}
 
-	resp, err := http.PostForm("https://api.openverse.org/v1/auth_tokens/token/", url.Values{
+	resp, err := httpPostForm("https://api.openverse.org/v1/auth_tokens/token/", url.Values{
 		"client_id":     {cid},
 		"client_secret": {csec},
 		"grant_type":    {"client_credentials"},

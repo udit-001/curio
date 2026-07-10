@@ -1,11 +1,12 @@
 package main
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -20,18 +21,9 @@ var retryDelays = []time.Duration{2 * time.Second, 5 * time.Second, 10 * time.Se
 // httpClient is the shared HTTP client with retry/backoff.
 var httpClient = &http.Client{Timeout: timeout}
 
-// httpGet performs a GET request with retry on 429 and returns the response body.
-func httpGet(url string, headers map[string]string) (*http.Response, error) {
+// doWithRetry executes a request with retry on 429.
+func doWithRetry(req *http.Request) (*http.Response, error) {
 	for attempt := 0; attempt < maxRetries; attempt++ {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("User-Agent", userAgent)
-		for k, v := range headers {
-			req.Header.Set(k, v)
-		}
-
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			return nil, err
@@ -48,11 +40,34 @@ func httpGet(url string, headers map[string]string) (*http.Response, error) {
 		return resp, nil
 	}
 
-	return nil, fmt.Errorf("max retries exceeded for %s", url)
+	return nil, fmt.Errorf("max retries exceeded for %s", req.URL.String())
+}
+
+// httpGet performs a GET request with retry on 429 and returns the response.
+func httpGet(url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+	return doWithRetry(req)
+}
+
+// httpPostForm performs a POST request with form values, retry on 429, and returns the response.
+func httpPostForm(url string, values url.Values) (*http.Response, error) {
+	req, err := http.NewRequest("POST", url, strings.NewReader(values.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	return doWithRetry(req)
 }
 
 // httpGetJSON fetches a URL, decodes the JSON response into target, and closes the body.
-// Replaces the repeated httpGet → defer Close → json.Decode idiom.
 func httpGetJSON(url string, headers map[string]string, target interface{}) error {
 	resp, err := httpGet(url, headers)
 	if err != nil {
@@ -63,8 +78,4 @@ func httpGetJSON(url string, headers map[string]string, target interface{}) erro
 		return fmt.Errorf("decode error: %w", err)
 	}
 	return nil
-}
-
-func base64Encode(s string) string {
-	return base64.StdEncoding.EncodeToString([]byte(s))
 }

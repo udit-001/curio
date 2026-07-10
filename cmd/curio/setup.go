@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"net/url"
 	"time"
 )
@@ -212,7 +211,7 @@ func runStage(s stageConfig, stageIdx, totalStages, minutesElapsed, totalMinutes
 // ---- Key test functions ----
 
 func testSmithsonian(key string) error {
-	resp, err := http.Get("https://api.si.edu/openaccess/api/v1.0/stats?api_key=" + key)
+	resp, err := httpGet("https://api.si.edu/openaccess/api/v1.0/stats?api_key="+key, nil)
 	if err != nil {
 		return err
 	}
@@ -267,7 +266,7 @@ func testUnsplash(key string) error {
 }
 
 func testBHL(key string) error {
-	resp, err := http.Get("https://www.biodiversitylibrary.org/api3?action=GetStatus&format=json&apikey=" + key)
+	resp, err := httpGet("https://www.biodiversitylibrary.org/api3?action=GetStatus&format=json&apikey="+key, nil)
 	if err != nil {
 		return err
 	}
@@ -378,7 +377,7 @@ func runSetup() {
 			warn("No email provided — skipping Openverse.")
 		} else {
 			note("Registering app 'curio' with Openverse...")
-			regResp, err := http.PostForm("https://api.openverse.org/v1/auth_tokens/register/", url.Values{
+			regResp, err := httpPostForm("https://api.openverse.org/v1/auth_tokens/register/", url.Values{
 				"name":        {fmt.Sprintf("curio-%d", time.Now().UnixNano())},
 				"description": {"curio skill"},
 				"email":       {email},
@@ -403,7 +402,7 @@ func runSetup() {
 					pause("Clicked the verification link?")
 
 					note("Testing credentials...")
-					tokenResp, err := http.PostForm("https://api.openverse.org/v1/auth_tokens/token/", url.Values{
+					tokenResp, err := httpPostForm("https://api.openverse.org/v1/auth_tokens/token/", url.Values{
 						"client_id":     {reg.ClientID},
 						"client_secret": {reg.ClientSecret},
 						"grant_type":    {"client_credentials"},
