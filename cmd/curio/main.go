@@ -64,6 +64,18 @@ func main() {
 	case "version", "--version", "-v":
 		printVersion()
 		return
+	case "upgrade":
+		force := false
+		noSkills := false
+		for _, arg := range os.Args[2:] {
+			if arg == "--force" || arg == "-f" {
+				force = true
+			} else if arg == "--no-skills" {
+				noSkills = true
+			}
+		}
+		runUpgrade(force, noSkills)
+		return
 	case "help", "--help", "-h":
 		printUsage()
 		return
@@ -284,6 +296,7 @@ Usage:
   curio sources [--json]
   curio setup
   curio skills install [--dir DIR] [--project] [--agents-only] [--claude-only]
+  curio upgrade [--force] [--no-skills]
   curio version
 
 Options:
