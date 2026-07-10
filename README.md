@@ -5,7 +5,7 @@ Search 17 free-licensed image sources from the command line. Designed as a CLI s
 ## Install
 
 ```bash
-go install github.com/udit-001/curio@latest
+go install github.com/udit-001/curio/cmd/curio@latest
 ```
 
 Or build from source:
