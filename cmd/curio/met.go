@@ -96,15 +96,31 @@ func (s *MetSource) Search(query string, count int, licenseTier string, opts Opt
 			license = "CC0"
 		}
 
+		meta := map[string]any{}
+		if obj.Medium != "" {
+			meta["description"] = fmt.Sprintf("%s. %s", obj.Classification, obj.Medium)
+		}
+		if obj.ObjectDate != "" {
+			meta["date"] = obj.ObjectDate
+		}
+		if obj.Department != "" {
+			meta["tags"] = []string{obj.Department, obj.Classification}
+		}
+		if obj.Classification != "" {
+			meta["category"] = obj.Classification
+		}
+
 		out = append(out, Result{
-			Source:      "met",
-			Title:       obj.Title,
-			Creator:     obj.ArtistDisplayName,
-			License:     license,
-			LicenseURL:  obj.ObjectURL,
-			Attribution: fmt.Sprintf(`"%s" by %s — %s (Met Museum)`, obj.Title, orDefaultStr(obj.ArtistDisplayName, "unknown"), license),
-			ImageURL:    imgURL,
-			LandingURL:  obj.ObjectURL,
+			Source:       "met",
+			Title:        obj.Title,
+			Creator:      obj.ArtistDisplayName,
+			License:      license,
+			LicenseURL:   obj.ObjectURL,
+			Attribution:  fmt.Sprintf(`"%s" by %s — %s (Met Museum)`, obj.Title, orDefaultStr(obj.ArtistDisplayName, "unknown"), license),
+			ImageURL:     imgURL,
+			ThumbnailURL: obj.PrimaryImageSmall,
+			LandingURL:   obj.ObjectURL,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break
@@ -116,10 +132,23 @@ func (s *MetSource) Search(query string, count int, licenseTier string, opts Opt
 type metObject struct {
 	Title             string `json:"title"`
 	ArtistDisplayName string `json:"artistDisplayName"`
+	ArtistAlphaSort   string `json:"artistAlphaSort"`
+	ArtistBeginDate   string `json:"artistBeginDate"`
+	ArtistEndDate     string `json:"artistEndDate"`
+	ObjectDate        string `json:"objectDate"`
+	ObjectBeginDate   string `json:"objectBeginDate"`
+	Classification    string `json:"classification"`
+	Department        string `json:"department"`
+	Medium            string `json:"medium"`
+	Dimensions        string `json:"dimensions"`
+	ObjectName        string `json:"objectName"`
 	IsPublicDomain    bool   `json:"isPublicDomain"`
 	PrimaryImage      string `json:"primaryImage"`
 	PrimaryImageSmall string `json:"primaryImageSmall"`
 	ObjectURL         string `json:"objectURL"`
+	Tags              []struct {
+		Term string `json:"term"`
+	} `json:"tags"`
 }
 
 func (s *MetSource) fetchObject(objectID int) (*metObject, error) {

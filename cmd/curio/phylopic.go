@@ -123,6 +123,13 @@ func (s *PhyloPicSource) Search(query string, count int, licenseTier string, opt
 			title = nodeName(item.Names)
 		}
 
+		meta := map[string]any{}
+		sciName := nodeName(item.Names)
+		if sciName != "" && sciName != "unknown" {
+			meta["description"] = sciName
+		}
+		meta["category"] = "silhouette/svg"
+
 		out = append(out, Result{
 			Source:      "phylopic",
 			Title:       title,
@@ -132,6 +139,7 @@ func (s *PhyloPicSource) Search(query string, count int, licenseTier string, opt
 			Attribution: fmt.Sprintf(`"%s" by %s — %s (PhyloPic)`, title, orDefaultStr(img.Attribution, "unknown"), license),
 			ImageURL:    imgURL,
 			LandingURL:  fmt.Sprintf("https://www.phylopic.org/images/%s", img.UUID),
+			Meta:        meta,
 		})
 		if len(out) >= count {
 			break

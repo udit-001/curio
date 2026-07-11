@@ -38,6 +38,7 @@ func (s *UnsplashSource) Search(query string, count int, licenseTier string, opt
 	var data struct {
 		Results []struct {
 			AltDescription string `json:"alt_description"`
+			Description    string `json:"description"`
 			URLs           struct {
 				Raw     string `json:"raw"`
 				Full    string `json:"full"`
@@ -45,9 +46,11 @@ func (s *UnsplashSource) Search(query string, count int, licenseTier string, opt
 				Small   string `json:"small"`
 				Thumb   string `json:"thumb"`
 			} `json:"urls"`
-			Width  int `json:"width"`
-			Height int `json:"height"`
-			User   struct {
+			Width     int    `json:"width"`
+			Height    int    `json:"height"`
+			Likes     int    `json:"likes"`
+			CreatedAt string `json:"created_at"`
+			User      struct {
 				Name  string `json:"name"`
 				Links struct {
 					HTML string `json:"html"`
@@ -56,6 +59,9 @@ func (s *UnsplashSource) Search(query string, count int, licenseTier string, opt
 			Links struct {
 				HTML string `json:"html"`
 			} `json:"links"`
+			Tags []struct {
+				Title string `json:"title"`
+			} `json:"tags"`
 		} `json:"results"`
 	}
 	if err := httpGetJSON(searchURL, headers, &data); err != nil {
@@ -81,18 +87,41 @@ func (s *UnsplashSource) Search(query string, count int, licenseTier string, opt
 			title = "Untitled"
 		}
 
+		meta := map[string]any{}
+		if r.Description != "" {
+			meta["description"] = r.Description
+		}
+		if r.CreatedAt != "" {
+			meta["date"] = r.CreatedAt
+		}
+		if r.Likes > 0 {
+			meta["likes"] = r.Likes
+		}
+		meta["category"] = "photograph"
+		var tags []string
+		for _, t := range r.Tags {
+			if t.Title != "" {
+				tags = append(tags, t.Title)
+			}
+		}
+		if len(tags) > 0 {
+			meta["tags"] = tags
+		}
+
 		out = append(out, Result{
-			Source:      "unsplash",
-			Title:       title,
-			Creator:     r.User.Name,
-			CreatorURL:  r.User.Links.HTML,
-			License:     "Unsplash License (no attribution required)",
-			LicenseURL:  "https://unsplash.com/license",
-			Attribution: fmt.Sprintf(`"%s" by %s — Unsplash License`, title, orDefaultStr(r.User.Name, "unknown")),
-			ImageURL:    imgURL,
-			LandingURL:  r.Links.HTML,
-			Width:       r.Width,
-			Height:      r.Height,
+			Source:       "unsplash",
+			Title:        title,
+			Creator:      r.User.Name,
+			CreatorURL:   r.User.Links.HTML,
+			License:      "Unsplash License (no attribution required)",
+			LicenseURL:   "https://unsplash.com/license",
+			Attribution:  fmt.Sprintf(`"%s" by %s — Unsplash License`, title, orDefaultStr(r.User.Name, "unknown")),
+			ImageURL:     imgURL,
+			ThumbnailURL: r.URLs.Thumb,
+			LandingURL:   r.Links.HTML,
+			Width:        r.Width,
+			Height:       r.Height,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

@@ -42,7 +42,10 @@ func (s *VaSource) Search(query string, count int, licenseTier string, opts Opts
 			Images         struct {
 				IiifBaseURL string `json:"_iiif_image_base_url"`
 			} `json:"_images"`
-			Rights string `json:"rights"`
+			Rights        string   `json:"rights"`
+			PlaceOfOrigin string   `json:"_placeOfOrigin"`
+			Materials     []string `json:"_materials"`
+			Techniques    []string `json:"_techniques"`
 		} `json:"records"`
 		Info struct {
 			RecordCount int `json:"record_count"`
@@ -95,16 +98,34 @@ func (s *VaSource) Search(query string, count int, licenseTier string, opts Opts
 
 		maker := r.PrimaryMaker.Name
 
+		thumbnailURL := iiifBase + "full/!200,200/0/default.jpg"
+
+		meta := map[string]any{}
+		if r.ObjectType != "" {
+			meta["category"] = r.ObjectType
+		}
+		if r.PlaceOfOrigin != "" {
+			meta["location"] = r.PlaceOfOrigin
+		}
+		var tags []string
+		tags = append(tags, r.Materials...)
+		tags = append(tags, r.Techniques...)
+		if len(tags) > 0 {
+			meta["tags"] = tags
+		}
+
 		out = append(out, Result{
-			Source:      "va",
-			Title:       title,
-			Creator:     maker,
-			License:     license,
-			LicenseURL:  licenseURL,
-			Attribution: fmt.Sprintf(`"%s" by %s — %s (V&A Museum)`, title, orDefaultStr(maker, "unknown"), license),
-			ImageURL:    imgURL,
-			LandingURL:  fmt.Sprintf("https://collections.vam.ac.uk/item/%s", r.SystemNumber),
-			Width:       width,
+			Source:       "va",
+			Title:        title,
+			Creator:      maker,
+			License:      license,
+			LicenseURL:   licenseURL,
+			Attribution:  fmt.Sprintf(`"%s" by %s — %s (V&A Museum)`, title, orDefaultStr(maker, "unknown"), license),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   fmt.Sprintf("https://collections.vam.ac.uk/item/%s", r.SystemNumber),
+			Width:        width,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

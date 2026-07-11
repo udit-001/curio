@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 // ---- Pixabay Source ----
@@ -43,6 +44,10 @@ func (s *PixabaySource) Search(query string, count int, licenseTier string, opts
 			LargeImageURL string `json:"largeImageURL"`
 			ImageWidth    int    `json:"imageWidth"`
 			ImageHeight   int    `json:"imageHeight"`
+			ImageSize     int    `json:"imageSize"`
+			Views         int    `json:"views"`
+			Downloads     int    `json:"downloads"`
+			Likes         int    `json:"likes"`
 		} `json:"hits"`
 	}
 	if err := httpGetJSON(searchURL, nil, &data); err != nil {
@@ -66,17 +71,40 @@ func (s *PixabaySource) Search(query string, count int, licenseTier string, opts
 			continue
 		}
 
+		meta := map[string]any{}
+		if h.Tags != "" {
+			var tags []string
+			for _, t := range strings.Split(h.Tags, ",") {
+				t = strings.TrimSpace(t)
+				if t != "" {
+					tags = append(tags, t)
+				}
+			}
+			if len(tags) > 0 {
+				meta["tags"] = tags
+			}
+		}
+		meta["category"] = "photograph"
+		if h.Views > 0 {
+			meta["views"] = h.Views
+		}
+		if h.Downloads > 0 {
+			meta["downloads"] = h.Downloads
+		}
+
 		out = append(out, Result{
-			Source:      "pixabay",
-			Title:       h.Tags,
-			Creator:     h.User,
-			License:     "Pixabay Content License (no attribution required)",
-			LicenseURL:  "https://pixabay.com/service/license-summary/",
-			Attribution: fmt.Sprintf(`"%s" by %s — Pixabay License`, h.Tags, orDefaultStr(h.User, "unknown")),
-			ImageURL:    imgURL,
-			LandingURL:  h.PageURL,
-			Width:       h.ImageWidth,
-			Height:      h.ImageHeight,
+			Source:       "pixabay",
+			Title:        h.Tags,
+			Creator:      h.User,
+			License:      "Pixabay Content License (no attribution required)",
+			LicenseURL:   "https://pixabay.com/service/license-summary/",
+			Attribution:  fmt.Sprintf(`"%s" by %s — Pixabay License`, h.Tags, orDefaultStr(h.User, "unknown")),
+			ImageURL:     imgURL,
+			ThumbnailURL: h.PreviewURL,
+			LandingURL:   h.PageURL,
+			Width:        h.ImageWidth,
+			Height:       h.ImageHeight,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

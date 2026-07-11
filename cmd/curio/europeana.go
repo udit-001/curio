@@ -43,14 +43,16 @@ func (s *EuropeanaSource) Search(query string, count int, licenseTier string, op
 	var data struct {
 		Success bool `json:"success"`
 		Items   []struct {
-			ID           string   `json:"id"`
-			Title        []string `json:"title"`
-			DataProvider []string `json:"dataProvider"`
-			Rights       []string `json:"rights"`
-			EdmIsShownBy []string `json:"edmIsShownBy"`
-			EdmPreview   []string `json:"edmPreview"`
-			GUID         string   `json:"guid"`
-			Link         string   `json:"link"`
+			ID            string   `json:"id"`
+			Title         []string `json:"title"`
+			DataProvider  []string `json:"dataProvider"`
+			Country       []string `json:"country"`
+			Rights        []string `json:"rights"`
+			EdmIsShownBy  []string `json:"edmIsShownBy"`
+			EdmPreview    []string `json:"edmPreview"`
+			DcDescription []string `json:"dcDescription"`
+			GUID          string   `json:"guid"`
+			Link          string   `json:"link"`
 		} `json:"items"`
 	}
 	if err := httpGetJSON(searchURL, nil, &data); err != nil {
@@ -97,15 +99,38 @@ func (s *EuropeanaSource) Search(query string, count int, licenseTier string, op
 			landingURL = item.Link
 		}
 
+		thumbnailURL := ""
+		if len(item.EdmPreview) > 0 {
+			thumbnailURL = item.EdmPreview[0]
+		}
+
+		meta := map[string]any{}
+		if len(item.DcDescription) > 0 && item.DcDescription[0] != "" {
+			desc := item.DcDescription[0]
+			if len(desc) > 500 {
+				desc = desc[:500] + "..."
+			}
+			meta["description"] = desc
+		}
+		if len(item.DataProvider) > 0 {
+			meta["tags"] = item.DataProvider
+		}
+		if len(item.Country) > 0 {
+			meta["location"] = item.Country[0]
+		}
+		meta["category"] = "heritage"
+
 		out = append(out, Result{
-			Source:      "europeana",
-			Title:       title,
-			Creator:     creator,
-			License:     license,
-			LicenseURL:  licenseURL,
-			Attribution: fmt.Sprintf(`"%s" — %s (%s, Europeana)`, title, license, orDefaultStr(creator, "unknown")),
-			ImageURL:    imgURL,
-			LandingURL:  landingURL,
+			Source:       "europeana",
+			Title:        title,
+			Creator:      creator,
+			License:      license,
+			LicenseURL:   licenseURL,
+			Attribution:  fmt.Sprintf(`"%s" — %s (%s, Europeana)`, title, license, orDefaultStr(creator, "unknown")),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   landingURL,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

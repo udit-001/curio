@@ -95,15 +95,23 @@ func (s *BhlSource) Search(query string, count int, licenseTier string, opts Opt
 			creator = book.Authors[0].Name
 		}
 
+		meta := map[string]any{}
+		if book.PublicationDate != "" {
+			meta["date"] = book.PublicationDate
+		}
+		meta["category"] = "scientific illustration"
+
 		out = append(out, Result{
-			Source:      "bhl",
-			Title:       book.ShortTitle,
-			Creator:     creator,
-			License:     "Public domain (BHL)",
-			LicenseURL:  "https://creativecommons.org/publicdomain/mark/1.0/",
-			Attribution: fmt.Sprintf(`"%s" (%s) — Public domain (BHL)`, book.ShortTitle, book.PublicationDate),
-			ImageURL:    imgURL,
-			LandingURL:  page.PageURL,
+			Source:       "bhl",
+			Title:        book.ShortTitle,
+			Creator:      creator,
+			License:      "Public domain (BHL)",
+			LicenseURL:   "https://creativecommons.org/publicdomain/mark/1.0/",
+			Attribution:  fmt.Sprintf(`"%s" (%s) — Public domain (BHL)`, book.ShortTitle, book.PublicationDate),
+			ImageURL:     imgURL,
+			ThumbnailURL: page.ThumbnailURL,
+			LandingURL:   page.PageURL,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

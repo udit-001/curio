@@ -46,6 +46,7 @@ func (s *ArchiveSource) Search(query string, count int, licenseTier string, opts
 	for _, doc := range data.Response.Docs {
 		title := toString(doc.Title)
 		creator := toString(doc.Creator)
+		dateStr := toString(doc.Date)
 
 		imgURL := fmt.Sprintf("https://archive.org/services/img/%s", doc.Identifier)
 		if opts.WantFull {
@@ -54,15 +55,25 @@ func (s *ArchiveSource) Search(query string, count int, licenseTier string, opts
 
 		landingURL := fmt.Sprintf("https://archive.org/details/%s", doc.Identifier)
 
+		thumbnailURL := fmt.Sprintf("https://archive.org/services/img/%s?width=200", doc.Identifier)
+
+		meta := map[string]any{}
+		if dateStr != "" {
+			meta["date"] = dateStr
+		}
+		meta["category"] = "historical document"
+
 		out = append(out, Result{
-			Source:      "archive",
-			Title:       title,
-			Creator:     creator,
-			License:     "Public domain (Internet Archive)",
-			LicenseURL:  "https://archive.org/about/terms.php",
-			Attribution: fmt.Sprintf(`"%s" — Internet Archive`, title),
-			ImageURL:    imgURL,
-			LandingURL:  landingURL,
+			Source:       "archive",
+			Title:        title,
+			Creator:      creator,
+			License:      "Public domain (Internet Archive)",
+			LicenseURL:   "https://archive.org/about/terms.php",
+			Attribution:  fmt.Sprintf(`"%s" — Internet Archive`, title),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   landingURL,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

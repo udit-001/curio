@@ -43,12 +43,14 @@ func (s *PexelsSource) Search(query string, count int, licenseTier string, opts 
 			Photographer    string `json:"photographer"`
 			PhotographerURL string `json:"photographer_url"`
 			URL             string `json:"url"`
+			AvgColor        string `json:"avg_color"`
 			Src             struct {
 				Original string `json:"original"`
 				Large2x  string `json:"large2x"`
 				Large    string `json:"large"`
 				Medium   string `json:"medium"`
 				Small    string `json:"small"`
+				Tiny     string `json:"tiny"`
 				Portrait string `json:"portrait"`
 			} `json:"src"`
 			Width  int `json:"width"`
@@ -76,18 +78,26 @@ func (s *PexelsSource) Search(query string, count int, licenseTier string, opts 
 			continue
 		}
 
+		meta := map[string]any{}
+		if p.AvgColor != "" {
+			meta["color"] = p.AvgColor
+		}
+		meta["category"] = "photograph"
+
 		out = append(out, Result{
-			Source:      "pexels",
-			Title:       p.Alt,
-			Creator:     p.Photographer,
-			CreatorURL:  p.PhotographerURL,
-			License:     "Pexels License (no attribution required)",
-			LicenseURL:  "https://www.pexels.com/license/",
-			Attribution: fmt.Sprintf(`"%s" by %s — Pexels License`, p.Alt, orDefaultStr(p.Photographer, "unknown")),
-			ImageURL:    imgURL,
-			LandingURL:  p.URL,
-			Width:       p.Width,
-			Height:      p.Height,
+			Source:       "pexels",
+			Title:        p.Alt,
+			Creator:      p.Photographer,
+			CreatorURL:   p.PhotographerURL,
+			License:      "Pexels License (no attribution required)",
+			LicenseURL:   "https://www.pexels.com/license/",
+			Attribution:  fmt.Sprintf(`"%s" by %s — Pexels License`, p.Alt, orDefaultStr(p.Photographer, "unknown")),
+			ImageURL:     imgURL,
+			ThumbnailURL: p.Src.Tiny,
+			LandingURL:   p.URL,
+			Width:        p.Width,
+			Height:       p.Height,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

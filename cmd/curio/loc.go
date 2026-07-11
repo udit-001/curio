@@ -35,7 +35,11 @@ func (s *LocSource) Search(query string, count int, licenseTier string, opts Opt
 		Results []struct {
 			ID               string   `json:"id"`
 			Title            string   `json:"title"`
+			Description      string   `json:"description"`
 			AccessRestricted bool     `json:"access_restricted"`
+			Date             string   `json:"date"`
+			Subject          []string `json:"subject"`
+			Format           []string `json:"format"`
 			ImageURL         []string `json:"image_url"`
 			Item             struct {
 				RightsAdvisory string `json:"rights_advisory"`
@@ -78,14 +82,35 @@ func (s *LocSource) Search(query string, count int, licenseTier string, opts Opt
 			creator = r.Item.Creators[0].Title
 		}
 
+		thumbnailURL := ""
+		if len(r.ImageURL) > 0 {
+			thumbnailURL = stripFragment(r.ImageURL[0])
+		}
+
+		meta := map[string]any{}
+		if r.Description != "" {
+			meta["description"] = r.Description
+		}
+		if len(r.Subject) > 0 {
+			meta["tags"] = r.Subject
+		}
+		if r.Date != "" {
+			meta["date"] = r.Date
+		}
+		if len(r.Format) > 0 {
+			meta["category"] = r.Format[0]
+		}
+
 		out = append(out, Result{
-			Source:      "loc",
-			Title:       r.Title,
-			Creator:     creator,
-			License:     license,
-			Attribution: fmt.Sprintf(`"%s" — %s (Library of Congress)`, r.Title, license),
-			ImageURL:    imgURL,
-			LandingURL:  r.ID,
+			Source:       "loc",
+			Title:        r.Title,
+			Creator:      creator,
+			License:      license,
+			Attribution:  fmt.Sprintf(`"%s" — %s (Library of Congress)`, r.Title, license),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   r.ID,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

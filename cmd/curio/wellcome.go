@@ -90,6 +90,7 @@ func (s *WellcomeSource) searchSingle(query string, count int, license string, o
 			Thumbnail struct {
 				URL string `json:"url"`
 			} `json:"thumbnail"`
+			Keywords []string `json:"keywords"`
 		} `json:"results"`
 	}
 	if err := httpGetJSON(searchURL, nil, &data); err != nil {
@@ -110,15 +111,25 @@ func (s *WellcomeSource) searchSingle(query string, count int, license string, o
 
 		licenseLabel := s.licenseLabel(loc.License.ID, loc.License.Label)
 
+		meta := map[string]any{}
+		if len(r.Keywords) > 0 {
+			meta["tags"] = r.Keywords
+		}
+		meta["category"] = "medical/scientific"
+
+		thumbnailURL := s.iiifURL(r.Thumbnail.URL, Opts{Width: 200})
+
 		out = append(out, Result{
-			Source:      "wellcome",
-			Title:       r.Source.Title,
-			Creator:     loc.Credit,
-			License:     licenseLabel,
-			LicenseURL:  loc.License.URL,
-			Attribution: fmt.Sprintf(`"%s" — %s (%s)`, r.Source.Title, licenseLabel, orDefaultStr(loc.Credit, "Wellcome Collection")),
-			ImageURL:    imgURL,
-			LandingURL:  fmt.Sprintf("https://wellcomecollection.org/works/%s", r.Source.ID),
+			Source:       "wellcome",
+			Title:        r.Source.Title,
+			Creator:      loc.Credit,
+			License:      licenseLabel,
+			LicenseURL:   loc.License.URL,
+			Attribution:  fmt.Sprintf(`"%s" — %s (%s)`, r.Source.Title, licenseLabel, orDefaultStr(loc.Credit, "Wellcome Collection")),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   fmt.Sprintf("https://wellcomecollection.org/works/%s", r.Source.ID),
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

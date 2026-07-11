@@ -115,17 +115,28 @@ func (s *WikipediaSource) Search(query string, count int, licenseTier string, op
 
 		landingURL := "https://en.wikipedia.org/wiki/" + url.PathEscape(p.title)
 
+		thumbnailURL := ""
+		if p.thumb != "" {
+			thumbnailURL = p.thumb
+		}
+
+		meta := map[string]any{}
+		meta["category"] = "encyclopedic"
+		meta["tags"] = []string{p.title}
+
 		out = append(out, Result{
-			Source:      "wikipedia",
-			Title:       p.title,
-			Creator:     "Wikipedia contributors",
-			License:     "Various (see image source)",
-			LicenseURL:  landingURL,
-			Attribution: fmt.Sprintf(`"%s" — image from Wikipedia article`, p.title),
-			ImageURL:    imgURL,
-			LandingURL:  landingURL,
-			Width:       p.thumbW,
-			Height:      p.thumbH,
+			Source:       "wikipedia",
+			Title:        p.title,
+			Creator:      "Wikipedia contributors",
+			License:      "Various (see image source)",
+			LicenseURL:   landingURL,
+			Attribution:  fmt.Sprintf(`"%s" — image from Wikipedia article`, p.title),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbnailURL,
+			LandingURL:   landingURL,
+			Width:        p.thumbW,
+			Height:       p.thumbH,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break
