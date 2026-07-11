@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 )
 
 // ---- Sources command ----
@@ -56,4 +57,12 @@ func runSources(asJSON bool) {
 		}
 		fmt.Printf("  %s %-14s %s\n", mark, info.Name, info.Description)
 	}
+}
+
+func availableSources() string {
+	names := make([]string, 0, len(sources))
+	for name := range sources {
+		names = append(names, name)
+	}
+	return strings.Join(names, ", ")
 }

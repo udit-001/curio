@@ -24,17 +24,8 @@ func hasDir(path string) bool {
 
 func detectAgents() []string {
 	var detected []string
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return detected
-	}
-
 	for _, name := range agentProviders {
-		found := hasBinary(name)
-		if !found && hasDir(filepath.Join(home, ".agents")) {
-			found = true
-		}
-		if found {
+		if hasBinary(name) {
 			detected = append(detected, name)
 		}
 	}
@@ -83,7 +74,7 @@ func installSkillFiles(skillDir string) error {
 	}
 
 	files := map[string][]byte{}
-	for _, name := range []string{"SKILL.md"} {
+	for _, name := range embeddedSkillFiles {
 		data, err := skillFiles.ReadFile(name)
 		if err != nil {
 			return fmt.Errorf("read embedded %s: %w", name, err)
@@ -98,14 +89,9 @@ func installSkillFiles(skillDir string) error {
 }
 
 func runInstall(dir string, project bool, agentsOnly, claudeOnly bool) error {
-	// Read embedded skill files for hash comparison
-	skillFileData := map[string][]byte{}
-	for _, name := range []string{"SKILL.md"} {
-		data, err := skillFiles.ReadFile(name)
-		if err != nil {
-			return fmt.Errorf("read embedded %s: %w", name, err)
-		}
-		skillFileData[name] = data
+	skillFileData := readEmbeddedSkillFiles()
+	if skillFileData == nil {
+		return fmt.Errorf("could not read embedded skill files")
 	}
 
 	// Explicit dir — install there directly

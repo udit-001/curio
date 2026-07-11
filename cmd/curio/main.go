@@ -304,14 +304,6 @@ func printResults(results []Result, asJSON bool) {
 	}
 }
 
-func availableSources() string {
-	names := make([]string, 0, len(sources))
-	for name := range sources {
-		names = append(names, name)
-	}
-	return strings.Join(names, ", ")
-}
-
 func printUsage() {
 	fmt.Println(`curio — search & download free-licensed images
 
@@ -334,60 +326,6 @@ Options:
   -o DIR        output dir (default: unique temp dir per run)
   --json        machine-readable output (recommended for agents)
   --quiet       download mode: print only paths, no progress (for scripting)`)
-}
-
-var knownCommands = []string{"search", "sources", "setup", "skills", "upgrade", "version", "help"}
-
-// suggestCommand returns the closest known command to the input, or "" if none is close enough.
-func suggestCommand(input string) string {
-	best := ""
-	bestDist := 3 // max edit distance to suggest
-	for _, cmd := range knownCommands {
-		dist := editDistance(input, cmd)
-		if dist < bestDist {
-			best = cmd
-			bestDist = dist
-		}
-	}
-	return best
-}
-
-// editDistance computes Levenshtein distance between two strings.
-func editDistance(a, b string) int {
-	la, lb := len(a), len(b)
-	if la == 0 {
-		return lb
-	}
-	if lb == 0 {
-		return la
-	}
-	prev := make([]int, lb+1)
-	curr := make([]int, lb+1)
-	for j := 0; j <= lb; j++ {
-		prev[j] = j
-	}
-	for i := 1; i <= la; i++ {
-		curr[0] = i
-		for j := 1; j <= lb; j++ {
-			cost := 1
-			if a[i-1] == b[j-1] {
-				cost = 0
-			}
-			curr[j] = min3(prev[j]+1, curr[j-1]+1, prev[j-1]+cost)
-		}
-		prev, curr = curr, prev
-	}
-	return prev[lb]
-}
-
-func min3(a, b, c int) int {
-	if b < a {
-		a = b
-	}
-	if c < a {
-		a = c
-	}
-	return a
 }
 
 func printVersion() {
