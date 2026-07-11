@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"sync"
 
 	"github.com/spf13/cobra"
 )
@@ -104,49 +106,79 @@ type searchOpts struct {
 }
 
 func search(query string, opts searchOpts) ([]Result, []string) {
-	var results []Result
-	var errors []string
-
 	srcOpts := Opts{Width: opts.width, WantFull: opts.wantFull}
 
-	runSource := func(name string) {
-		src, ok := sources[name]
-		if !ok {
-			return
-		}
-		if src.NeedsKey() && configGet(src.KeyName()) == "" {
-			if opts.source == "all" {
-				errors = append(errors, fmt.Sprintf("%s: skipped (unavailable)", name))
-			} else {
-				errors = append(errors, fmt.Sprintf("%s is unavailable (API key not configured)", name))
-			}
-			return
-		}
-		r, err := src.Search(query, opts.count, opts.licenseTier, srcOpts)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("%s: %v", name, err))
-			return
-		}
-		results = append(results, r...)
-	}
-
+	// Determine which sources to query
+	var sourceNames []string
 	if opts.source == "all" {
 		for name := range sources {
-			runSource(name)
+			sourceNames = append(sourceNames, name)
 		}
+		sort.Strings(sourceNames)
 	} else {
-		runSource(opts.source)
+		sourceNames = []string{opts.source}
 	}
 
+	type sourceResult struct {
+		results []Result
+		errMsg  string
+	}
+
+	// Query sources concurrently with a concurrency limit
+	results := make([][]Result, len(sourceNames))
+	errs := make([]string, len(sourceNames))
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 5) // max 5 concurrent source queries
+
+	for i, name := range sourceNames {
+		wg.Add(1)
+		go func(idx int, srcName string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			src, ok := sources[srcName]
+			if !ok {
+				return
+			}
+			if src.NeedsKey() && configGet(src.KeyName()) == "" {
+				if opts.source == "all" {
+					errs[idx] = fmt.Sprintf("%s: skipped (unavailable)", srcName)
+				} else {
+					errs[idx] = fmt.Sprintf("%s is unavailable (API key not configured)", srcName)
+				}
+				return
+			}
+			r, err := src.Search(query, opts.count, opts.licenseTier, srcOpts)
+			if err != nil {
+				errs[idx] = fmt.Sprintf("%s: %v", srcName, err)
+				return
+			}
+			results[idx] = r
+		}(i, name)
+	}
+	wg.Wait()
+
+	// Flatten results in source order (stable)
+	var allResults []Result
+	var allErrors []string
+	for i := range sourceNames {
+		if errs[i] != "" {
+			allErrors = append(allErrors, errs[i])
+		}
+		allResults = append(allResults, results[i]...)
+	}
+
+	// Dedup by ImageURL
 	seen := map[string]bool{}
 	var deduped []Result
-	for _, r := range results {
+	for _, r := range allResults {
 		if r.ImageURL != "" && !seen[r.ImageURL] {
 			seen[r.ImageURL] = true
 			deduped = append(deduped, r)
 		}
 	}
-	return deduped, errors
+	return deduped, allErrors
 }
 
 func printResults(results []Result, asJSON bool) {
