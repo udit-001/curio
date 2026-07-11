@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -74,4 +75,20 @@ func runSources(asJSON bool) {
 		}
 		fmt.Printf("  %s %-14s %s\n", mark, info.Name, info.Description)
 	}
+}
+
+// availableKeylessSources returns a comma-separated list of available
+// keyless sources, excluding the given source name.
+func availableKeylessSources(exclude string) string {
+	var names []string
+	for name, src := range sources {
+		if name == exclude {
+			continue
+		}
+		if !src.NeedsKey() || configGet(src.KeyName()) != "" {
+			names = append(names, name)
+		}
+	}
+	sort.Strings(names)
+	return strings.Join(names, ", ")
 }

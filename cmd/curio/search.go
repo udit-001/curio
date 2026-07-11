@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -44,26 +45,34 @@ Examples:
 		}
 
 		results, errs := search(query, opts)
-		for _, e := range errs {
-			fmt.Fprintf(cmd.ErrOrStderr(), "  ! source error — %s\n", e)
+
+		// In JSON mode, errors go to stderr as-is
+		if opts.json {
+			for _, e := range errs {
+				fmt.Fprintf(cmd.ErrOrStderr(), "  ! %s\n", e)
+			}
+		} else {
+			// Print errors
+			for _, e := range errs {
+				fmt.Fprintf(cmd.ErrOrStderr(), "  ! %s\n", e)
+			}
 		}
 
-		if len(results) == 0 && len(errs) > 0 {
-			fmt.Fprintln(cmd.ErrOrStderr(), "No results.")
-			return fmt.Errorf("no results")
+		// No results
+		if len(results) == 0 {
+			if opts.source != "all" && len(errs) > 0 {
+				// Explicit source failed — suggest available alternatives
+				fmt.Fprintf(cmd.ErrOrStderr(), "\n  Available keyless sources: ")
+				fmt.Fprintln(cmd.ErrOrStderr(), availableKeylessSources(opts.source))
+				fmt.Fprintf(cmd.ErrOrStderr(), "  Ask the user to run 'curio setup' to configure %s.\n", opts.source)
+			}
+			os.Exit(1)
 		}
 
 		if opts.download {
-			if len(results) == 0 {
-				fmt.Fprintln(cmd.ErrOrStderr(), "No results to download.")
-				return fmt.Errorf("no results to download")
-			}
 			_, _, _ = download(results, opts.outDir, opts.quiet)
 		} else {
 			printResults(results, opts.json)
-			if len(results) == 0 {
-				return fmt.Errorf("no results")
-			}
 		}
 		return nil
 	},
@@ -107,10 +116,10 @@ func search(query string, opts searchOpts) ([]Result, []string) {
 		}
 		if src.NeedsKey() && configGet(src.KeyName()) == "" {
 			if opts.source == "all" {
-				errors = append(errors, fmt.Sprintf("%s: skipped (no API key — run 'curio setup')", name))
-				return
+				errors = append(errors, fmt.Sprintf("%s: skipped (unavailable)", name))
+			} else {
+				errors = append(errors, fmt.Sprintf("%s is unavailable (API key not configured)", name))
 			}
-			errors = append(errors, fmt.Sprintf("%s: requires API key '%s' — run 'curio setup'", name, src.KeyName()))
 			return
 		}
 		r, err := src.Search(query, opts.count, opts.licenseTier, srcOpts)
