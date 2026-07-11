@@ -44,7 +44,7 @@ TOML at OS-standard config directory (`~/.config/curio/` on Linux, `~/Library/Ap
 
 ## CLI
 
-Run `curio --help` for the full CLI reference. Key commands: `curio "query" [opts]`, `curio sources [--json]`, `curio setup`, `curio skills install`, `curio version`.
+Run `curio --help` for the full CLI reference. Key commands: `curio search "query" [opts]`, `curio sources [--json]`, `curio setup`, `curio skills install`, `curio skills uninstall`, `curio upgrade`, `curio version`.
 
 ## Sources
 

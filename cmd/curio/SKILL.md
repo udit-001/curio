@@ -9,10 +9,10 @@ Drop a real, free-licensed image into the project. Downloads land in a scratch d
 
 ```bash
 # Search and download (the main thing)
-curio "cats" -s openverse -d
+curio search "cats" -s openverse -d
 
 # Preview without downloading
-curio "cats" -s openverse --json
+curio search "cats" -s openverse --json
 
 # See available sources
 curio sources --json
@@ -37,7 +37,7 @@ When downloading with `-d`, read `attribution.json` in the scratch dir for struc
 
 1. **Parse intent** — subject, how many, where it goes in the project, and the source.
    - Done when: you have a query string, a count, a target path, and a source (or `all`).
-2. **Fetch to scratch** — `curio "q" -s <source> -d --json`. Downloads the top N to a unique scratch dir and prints the path. Your structured source for picking is `scratch/attribution.json` (filename ↔ title ↔ license ↔ creator ↔ dimensions).
+2. **Fetch to scratch** — `curio search "q" -s <source> -d --json`. Downloads the top N to a unique scratch dir and prints the path. Your structured source for picking is `scratch/attribution.json` (filename ↔ title ↔ license ↔ creator ↔ dimensions).
    - Done when: the scratch path holds the image files and `attribution.json`.
 3. **Inspect** — read `scratch/attribution.json` to pick by title, license, or creator; or open the image files to judge visually. Choose the winner.
    - Done when: you've settled which file to place.
@@ -57,27 +57,27 @@ Broaden the query, switch source (run `curio sources` to see alternatives), or t
 curio sources --json
 
 # Preview without downloading (JSON output for agent parsing)
-curio "modern office" --json
+curio search "modern office" --json
 
 # Fetch 5 to scratch, then copy the winner into the project
-curio "modern office" -d
+curio search "modern office" -d
 cp /tmp/curio/.../02_open-plan-desk.jpg ./public/hero.jpg
 
 # Wikipedia — curated image for any subject
-curio "crocodile" -s wikipedia -d
+curio search "crocodile" -s wikipedia -d
 
 # NASA, place directly into the project (skip scratch)
-curio "mars surface" -s nasa -d -o ./public/hero
+curio search "mars surface" -s nasa -d -o ./public/hero
 
 # Smithsonian (requires key — run setup first)
-curio "earhart" -s smithsonian -d
+curio search "earhart" -s smithsonian -d
 
 # PhyloPic, SVG silhouettes for biology diagrams
-curio "dinosauria" -s phylopic -d
+curio search "dinosauria" -s phylopic -d
 
 # Wellcome, medical/scientific history
-curio "anatomy" -s wellcome -d
+curio search "anatomy" -s wellcome -d
 
 # Wikimedia, allow CC-BY, full-res
-curio "eiffel tower" -s wikimedia -l any --full -d
+curio search "eiffel tower" -s wikimedia -l any --full -d
 ```

@@ -18,12 +18,12 @@ cd curio && make build
 ## Usage
 
 ```bash
-curio "cats" -n 3              # search (list results)
-curio "cats" -n 3 -d           # download to scratch dir
-curio "mars surface" -s nasa -d
-curio "modern office" --json   # machine-readable output
-curio sources --json           # list all sources + key status
-curio setup                    # interactive API key wizard
+curio search "cats" -n 3              # search (list results)
+curio search "cats" -n 3 -d           # download to scratch dir
+curio search "mars surface" -s nasa -d
+curio search "modern office" --json   # machine-readable output
+curio sources --json                  # list all sources + key status
+curio setup                           # interactive API key wizard
 ```
 
 ### Options
@@ -32,7 +32,7 @@ curio setup                    # interactive API key wizard
 |------|-------------|
 | `-n N` | results (default 5) |
 | `-s SOURCE` | source name or `all` |
-| `-l LICENSE` | `cc0,pd` (default) \| `any` |
+| `-l LICENSE` | `free` (default) \| `any` |
 | `-d` | download to scratch dir |
 | `-o DIR` | output dir (overrides scratch) |
 | `-w N` | max width px |

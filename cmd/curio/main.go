@@ -21,6 +21,42 @@ func main() {
 
 	// Subcommands
 	switch os.Args[1] {
+	case "search":
+		args := os.Args[2:]
+		query, opts, err := parseArgs(args)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		if query == "" {
+			fmt.Fprintln(os.Stderr, "Error: query is required")
+			fmt.Fprintln(os.Stderr, "Usage: curio search \"QUERY\" [options]")
+			os.Exit(1)
+		}
+
+		results, errs := search(query, opts)
+		for _, e := range errs {
+			fmt.Fprintf(os.Stderr, "  ! source error — %s\n", e)
+		}
+
+		if len(results) == 0 && len(errs) > 0 {
+			fmt.Fprintln(os.Stderr, "No results.")
+			os.Exit(1)
+		}
+
+		if opts.download {
+			if len(results) == 0 {
+				fmt.Fprintln(os.Stderr, "No results to download.")
+				os.Exit(1)
+			}
+			_, _, _ = download(results, opts.outDir, opts.quiet)
+		} else {
+			printResults(results, opts.json)
+			if len(results) == 0 {
+				os.Exit(1)
+			}
+		}
+		return
 	case "sources":
 		asJSON := false
 		for _, arg := range os.Args[2:] {
@@ -34,16 +70,24 @@ func main() {
 		runSetup()
 		return
 	case "install", "skills":
-		// Handle: curio install, curio install --dir, curio skills install
+		// Handle: curio install, curio skills install, curio skills uninstall
+		rest := os.Args[2:]
+		if len(os.Args) > 2 && os.Args[2] == "install" {
+			rest = os.Args[3:]
+		} else if len(os.Args) > 2 && os.Args[2] == "uninstall" {
+			allUninstall := false
+			for _, arg := range os.Args[3:] {
+				if arg == "--all" {
+					allUninstall = true
+				}
+			}
+			runUninstall(allUninstall)
+			return
+		}
 		dir := ""
 		project := false
 		agentsOnly := false
 		claudeOnly := false
-		rest := os.Args[2:]
-		// Skip "install" if called as "curio skills install"
-		if len(os.Args) > 2 && os.Args[2] == "install" {
-			rest = os.Args[3:]
-		}
 		for i := 0; i < len(rest); i++ {
 			if rest[i] == "--dir" && i+1 < len(rest) {
 				dir = rest[i+1]
@@ -79,41 +123,21 @@ func main() {
 	case "help", "--help", "-h":
 		printUsage()
 		return
-	}
-
-	// Search mode — parse flags
-	args := os.Args[1:]
-	query, opts, err := parseArgs(args)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
-	}
-	if query == "" {
-		fmt.Fprintln(os.Stderr, "Error: query is required")
-		os.Exit(1)
-	}
-
-	results, errs := search(query, opts)
-	for _, e := range errs {
-		fmt.Fprintf(os.Stderr, "  ! source error — %s\n", e)
-	}
-
-	if len(results) == 0 && len(errs) > 0 {
-		fmt.Fprintln(os.Stderr, "No results.")
-		os.Exit(1)
-	}
-
-	if opts.download {
-		if len(results) == 0 {
-			fmt.Fprintln(os.Stderr, "No results to download.")
-			os.Exit(1)
+	default:
+		// Unknown command — suggest closest match
+		cmd := os.Args[1]
+		if strings.HasPrefix(cmd, "-") {
+			fmt.Fprintf(os.Stderr, "Error: unknown flag: %s\n", cmd)
+		} else {
+			suggestion := suggestCommand(cmd)
+			if suggestion != "" {
+				fmt.Fprintf(os.Stderr, "Error: unknown command %q — did you mean %q?\n", cmd, suggestion)
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: unknown command %q\n", cmd)
+			}
+			fmt.Fprintln(os.Stderr, "Run 'curio help' for usage.")
 		}
-		_, _, _ = download(results, opts.outDir, opts.quiet)
-	} else {
-		printResults(results, opts.json)
-		if len(results) == 0 {
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 }
 
@@ -292,10 +316,11 @@ func printUsage() {
 	fmt.Println(`curio — search & download free-licensed images
 
 Usage:
-  curio "QUERY" [options]
+  curio search "QUERY" [options]
   curio sources [--json]
   curio setup
   curio skills install [--dir DIR] [--project] [--agents-only] [--claude-only]
+  curio skills uninstall [--all]
   curio upgrade [--force] [--no-skills]
   curio version
 
@@ -309,6 +334,60 @@ Options:
   -o DIR        output dir (default: unique temp dir per run)
   --json        machine-readable output (recommended for agents)
   --quiet       download mode: print only paths, no progress (for scripting)`)
+}
+
+var knownCommands = []string{"search", "sources", "setup", "skills", "upgrade", "version", "help"}
+
+// suggestCommand returns the closest known command to the input, or "" if none is close enough.
+func suggestCommand(input string) string {
+	best := ""
+	bestDist := 3 // max edit distance to suggest
+	for _, cmd := range knownCommands {
+		dist := editDistance(input, cmd)
+		if dist < bestDist {
+			best = cmd
+			bestDist = dist
+		}
+	}
+	return best
+}
+
+// editDistance computes Levenshtein distance between two strings.
+func editDistance(a, b string) int {
+	la, lb := len(a), len(b)
+	if la == 0 {
+		return lb
+	}
+	if lb == 0 {
+		return la
+	}
+	prev := make([]int, lb+1)
+	curr := make([]int, lb+1)
+	for j := 0; j <= lb; j++ {
+		prev[j] = j
+	}
+	for i := 1; i <= la; i++ {
+		curr[0] = i
+		for j := 1; j <= lb; j++ {
+			cost := 1
+			if a[i-1] == b[j-1] {
+				cost = 0
+			}
+			curr[j] = min3(prev[j]+1, curr[j-1]+1, prev[j-1]+cost)
+		}
+		prev, curr = curr, prev
+	}
+	return prev[lb]
+}
+
+func min3(a, b, c int) int {
+	if b < a {
+		a = b
+	}
+	if c < a {
+		a = c
+	}
+	return a
 }
 
 func printVersion() {
