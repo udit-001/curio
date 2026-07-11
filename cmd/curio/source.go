@@ -2,18 +2,31 @@ package main
 
 // Result is the uniform output type returned by every Source.
 type Result struct {
-	Source      string `json:"source"`
-	Title       string `json:"title"`
-	Creator     string `json:"creator"`
-	CreatorURL  string `json:"creator_url"`
-	License     string `json:"license"`
-	LicenseURL  string `json:"license_url"`
-	Attribution string `json:"attribution"`
-	ImageURL    string `json:"image_url"`
-	LandingURL  string `json:"landing_url"`
-	Width       int    `json:"width"`
-	Height      int    `json:"height"`
+	Source       string         `json:"source"`
+	Title        string         `json:"title"`
+	Creator      string         `json:"creator"`
+	CreatorURL   string         `json:"creator_url"`
+	License      string         `json:"license"`
+	LicenseURL   string         `json:"license_url"`
+	Attribution  string         `json:"attribution"`
+	ImageURL     string         `json:"image_url"`
+	ThumbnailURL string         `json:"thumbnail_url,omitempty"`
+	LandingURL   string         `json:"landing_url"`
+	Width        int            `json:"width"`
+	Height       int            `json:"height"`
+	Meta         map[string]any `json:"meta,omitempty"`
 }
+
+// Meta keys are normalized across all sources. Each source maps its
+// API-specific fields to these shared keys so the agent has a consistent
+// vocabulary regardless of which source returned the result.
+//
+// Standard meta keys:
+//   tags        - []string  - subject keywords
+//   description - string    - caption or description text
+//   category    - string    - image type (photograph, illustration, diagram, etc.)
+//   date        - string    - creation or publish date (ISO 8601)
+//   location    - string    - where the image was taken or relates to
 
 // Opts carries source-agnostic options that each Source interprets as it can.
 type Opts struct {

@@ -65,6 +65,7 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 					ThumbWidth     int    `json:"thumbwidth"`
 					ThumbHeight    int    `json:"thumbheight"`
 					DescriptionURL string `json:"descriptionurl"`
+					Mime           string `json:"mime"`
 					Extmetadata    struct {
 						LicenseShortName struct {
 							Value string `json:"value"`
@@ -75,6 +76,15 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 						Artist struct {
 							Value string `json:"value"`
 						} `json:"Artist"`
+						ImageDescription struct {
+							Value string `json:"value"`
+						} `json:"ImageDescription"`
+						Categories struct {
+							Value string `json:"value"`
+						} `json:"Categories"`
+						DateTime struct {
+							Value string `json:"value"`
+						} `json:"DateTime"`
 					} `json:"extmetadata"`
 				} `json:"imageinfo"`
 			} `json:"pages"`
@@ -96,6 +106,10 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 			LicenseShortName string
 			LicenseURL       string
 			Artist           string
+			Description      string
+			Categories       string
+			DateTime         string
+			Mime             string
 		}
 	}
 
@@ -117,6 +131,10 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 		pg.ii.LicenseShortName = stripHTML(ii.Extmetadata.LicenseShortName.Value)
 		pg.ii.LicenseURL = stripHTML(ii.Extmetadata.LicenseURL.Value)
 		pg.ii.Artist = stripHTML(ii.Extmetadata.Artist.Value)
+		pg.ii.Description = stripHTML(ii.Extmetadata.ImageDescription.Value)
+		pg.ii.Categories = stripHTML(ii.Extmetadata.Categories.Value)
+		pg.ii.DateTime = stripHTML(ii.Extmetadata.DateTime.Value)
+		pg.ii.Mime = ii.Mime
 		pages = append(pages, pg)
 	}
 
@@ -156,17 +174,43 @@ func (s *WikimediaSource) Search(query string, count int, licenseTier string, op
 			attribution += fmt.Sprintf(" (%s)", p.ii.LicenseURL)
 		}
 
+		meta := map[string]any{}
+		if p.ii.Description != "" {
+			meta["description"] = p.ii.Description
+		}
+		if p.ii.Categories != "" {
+			cats := strings.Split(p.ii.Categories, "|")
+			var tags []string
+			for _, c := range cats {
+				c = strings.TrimSpace(c)
+				if c != "" {
+					tags = append(tags, c)
+				}
+			}
+			if len(tags) > 0 {
+				meta["tags"] = tags
+			}
+		}
+		if p.ii.DateTime != "" {
+			meta["date"] = p.ii.DateTime
+		}
+		if p.ii.Mime != "" {
+			meta["category"] = p.ii.Mime
+		}
+
 		out = append(out, Result{
-			Source:      "wikimedia",
-			Title:       title,
-			Creator:     artist,
-			License:     orDefaultStr(licName, "See item"),
-			LicenseURL:  p.ii.LicenseURL,
-			Attribution: attribution,
-			ImageURL:    imgURL,
-			LandingURL:  p.ii.DescriptionURL,
-			Width:       p.ii.ThumbWidth,
-			Height:      p.ii.ThumbHeight,
+			Source:       "wikimedia",
+			Title:        title,
+			Creator:      artist,
+			License:      orDefaultStr(licName, "See item"),
+			LicenseURL:   p.ii.LicenseURL,
+			Attribution:  attribution,
+			ImageURL:     imgURL,
+			ThumbnailURL: p.ii.ThumbURL,
+			LandingURL:   p.ii.DescriptionURL,
+			Width:        p.ii.ThumbWidth,
+			Height:       p.ii.ThumbHeight,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

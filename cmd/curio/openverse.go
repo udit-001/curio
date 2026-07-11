@@ -51,9 +51,14 @@ func (s *OpenverseSource) Search(query string, count int, licenseTier string, op
 			LicenseURL        string `json:"license_url"`
 			Attribution       string `json:"attribution"`
 			URL               string `json:"url"`
+			Thumbnail         string `json:"thumbnail"`
 			ForeignLandingURL string `json:"foreign_landing_url"`
 			Width             int    `json:"width"`
 			Height            int    `json:"height"`
+			Category          string `json:"category"`
+			Tags              []struct {
+				Name string `json:"name"`
+			} `json:"tags"`
 		} `json:"results"`
 	}
 	if err := httpGetJSON(searchURL, headers, &data); err != nil {
@@ -66,18 +71,33 @@ func (s *OpenverseSource) Search(query string, count int, licenseTier string, op
 		if r.LicenseVersion != "" {
 			lic = lic + " " + r.LicenseVersion
 		}
+		var tags []string
+		for _, t := range r.Tags {
+			if t.Name != "" {
+				tags = append(tags, t.Name)
+			}
+		}
+		details := map[string]any{}
+		if r.Category != "" {
+			details["category"] = r.Category
+		}
+		if len(tags) > 0 {
+			details["tags"] = tags
+		}
 		out = append(out, Result{
-			Source:      "openverse",
-			Title:       r.Title,
-			Creator:     r.Creator,
-			CreatorURL:  r.CreatorURL,
-			License:     strings.TrimSpace(lic),
-			LicenseURL:  r.LicenseURL,
-			Attribution: r.Attribution,
-			ImageURL:    r.URL,
-			LandingURL:  r.ForeignLandingURL,
-			Width:       r.Width,
-			Height:      r.Height,
+			Source:       "openverse",
+			Title:        r.Title,
+			Creator:      r.Creator,
+			CreatorURL:   r.CreatorURL,
+			License:      strings.TrimSpace(lic),
+			LicenseURL:   r.LicenseURL,
+			Attribution:  r.Attribution,
+			ImageURL:     r.URL,
+			ThumbnailURL: r.Thumbnail,
+			LandingURL:   r.ForeignLandingURL,
+			Width:        r.Width,
+			Height:       r.Height,
+			Meta:         details,
 		})
 	}
 	return out, nil

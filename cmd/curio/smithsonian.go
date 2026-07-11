@@ -50,6 +50,13 @@ func (s *SmithsonianSource) Search(query string, count int, licenseTier string, 
 						Label   string `json:"label"`
 						Content string `json:"content"`
 					} `json:"freetext"`
+					IndexedStructured struct {
+						Topic      []string `json:"topic"`
+						ObjectType []string `json:"object_type"`
+						Date       []string `json:"date"`
+						Place      []string `json:"place"`
+						UnitCode   []string `json:"unit_code"`
+					} `json:"indexedStructured"`
 					DescriptiveNonRepeating struct {
 						RecordLink  string `json:"record_link"`
 						OnlineMedia *struct {
@@ -87,14 +94,16 @@ func (s *SmithsonianSource) Search(query string, count int, licenseTier string, 
 
 		media := om.Media[0]
 
-		var imgURL string
+		var imgURL, thumbURL string
 		var width, height int
 		for _, res := range media.Resources {
-			if res.Label == "Screen Image" {
+			switch res.Label {
+			case "Screen Image":
 				imgURL = res.URL
 				width = res.Width
 				height = res.Height
-				break
+			case "Thumbnail":
+				thumbURL = res.URL
 			}
 		}
 		if imgURL == "" {
@@ -121,22 +130,55 @@ func (s *SmithsonianSource) Search(query string, count int, licenseTier string, 
 			}
 		}
 
+		desc := ""
+		if freetext, ok := row.Content.Freetext["notes"]; ok && len(freetext) > 0 {
+			desc = freetext[0].Content
+		}
+		if desc == "" {
+			if freetext, ok := row.Content.Freetext["summary"]; ok && len(freetext) > 0 {
+				desc = freetext[0].Content
+			}
+		}
+
 		license := "CC0"
 		if media.Usage.Access != "" {
 			license = media.Usage.Access
 		}
 
+		meta := map[string]any{}
+		if desc != "" {
+			meta["description"] = desc
+		}
+		var tags []string
+		tags = append(tags, row.Content.IndexedStructured.Topic...)
+		tags = append(tags, row.Content.IndexedStructured.ObjectType...)
+		tags = append(tags, row.Content.IndexedStructured.UnitCode...)
+		if len(tags) > 0 {
+			meta["tags"] = tags
+		}
+		if len(row.Content.IndexedStructured.ObjectType) > 0 {
+			meta["category"] = row.Content.IndexedStructured.ObjectType[0]
+		}
+		if len(row.Content.IndexedStructured.Date) > 0 {
+			meta["date"] = row.Content.IndexedStructured.Date[0]
+		}
+		if len(row.Content.IndexedStructured.Place) > 0 {
+			meta["location"] = row.Content.IndexedStructured.Place[0]
+		}
+
 		out = append(out, Result{
-			Source:      "smithsonian",
-			Title:       row.Title,
-			Creator:     creator,
-			License:     license,
-			LicenseURL:  "https://creativecommons.org/publicdomain/zero/1.0/",
-			Attribution: fmt.Sprintf(`"%s" — CC0 (Smithsonian Open Access)`, row.Title),
-			ImageURL:    imgURL,
-			LandingURL:  row.Content.DescriptiveNonRepeating.RecordLink,
-			Width:       width,
-			Height:      height,
+			Source:       "smithsonian",
+			Title:        row.Title,
+			Creator:      creator,
+			License:      license,
+			LicenseURL:   "https://creativecommons.org/publicdomain/zero/1.0/",
+			Attribution:  fmt.Sprintf(`"%s" — CC0 (Smithsonian Open Access)`, row.Title),
+			ImageURL:     imgURL,
+			ThumbnailURL: thumbURL,
+			LandingURL:   row.Content.DescriptiveNonRepeating.RecordLink,
+			Width:        width,
+			Height:       height,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break

@@ -34,8 +34,13 @@ func (s *NasaSource) Search(query string, count int, licenseTier string, opts Op
 			Items []struct {
 				Href string `json:"href"`
 				Data []struct {
-					Title            string `json:"title"`
-					SecondaryCreator string `json:"secondary_creator"`
+					Title            string   `json:"title"`
+					SecondaryCreator string   `json:"secondary_creator"`
+					Description      string   `json:"description"`
+					Keywords         []string `json:"keywords"`
+					DateCreated      string   `json:"date_created"`
+					Location         string   `json:"location"`
+					Center           string   `json:"center"`
 				} `json:"data"`
 				Links []struct {
 					Href   string `json:"href"`
@@ -83,17 +88,42 @@ func (s *NasaSource) Search(query string, count int, licenseTier string, opts Op
 			continue
 		}
 
+		var tags []string
+		tags = append(tags, d.Keywords...)
+		if d.Center != "" {
+			tags = append(tags, d.Center)
+		}
+		if d.Location != "" {
+			tags = append(tags, d.Location)
+		}
+
+		meta := map[string]any{}
+		if len(tags) > 0 {
+			meta["tags"] = tags
+		}
+		if d.Description != "" {
+			meta["description"] = d.Description
+		}
+		if d.DateCreated != "" {
+			meta["date"] = d.DateCreated
+		}
+		if d.Location != "" {
+			meta["location"] = d.Location
+		}
+
 		out = append(out, Result{
-			Source:      "nasa",
-			Title:       title,
-			Creator:     creator,
-			License:     "Public domain (NASA)",
-			LicenseURL:  "https://www.nasa.gov/about/about_nasa.html",
-			Attribution: fmt.Sprintf(`"%s" by NASA is in the public domain.`, title),
-			ImageURL:    imgURL,
-			LandingURL:  item.Href,
-			Width:       cw,
-			Height:      ch,
+			Source:       "nasa",
+			Title:        title,
+			Creator:      creator,
+			License:      "Public domain (NASA)",
+			LicenseURL:   "https://www.nasa.gov/about/about_nasa.html",
+			Attribution:  fmt.Sprintf(`"%s" by NASA is in the public domain.`, title),
+			ImageURL:     imgURL,
+			ThumbnailURL: preview,
+			LandingURL:   item.Href,
+			Width:        cw,
+			Height:       ch,
+			Meta:         meta,
 		})
 		if len(out) >= count {
 			break
