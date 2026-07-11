@@ -6,7 +6,24 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
+
+var uninstallCmd = &cobra.Command{
+	Use:   "uninstall",
+	Short: "Remove curio skill files",
+	Long:  `Remove curio skill files that were previously installed.`,
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		all, _ := cmd.Flags().GetBool("all")
+		runUninstall(all)
+	},
+}
+
+func init() {
+	uninstallCmd.Flags().Bool("all", false, "remove all installs without prompting")
+}
 
 func runUninstall(all bool) {
 	// Check all family locations

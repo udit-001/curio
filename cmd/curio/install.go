@@ -6,7 +6,49 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
+
+// ---- Skills command group ----
+
+var skillsCmd = &cobra.Command{
+	Use:   "skills",
+	Short: "Manage curio skill files for AI agents",
+	Long: `Install or uninstall the curio skill into your AI coding agent.
+Installs to ~/.agents/skills/curio/ and ~/.claude/skills/curio/.`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
+}
+
+var installCmd = &cobra.Command{
+	Use:   "install",
+	Short: "Install skill files for AI agents",
+	Long: `Install the curio skill for your AI coding agent.
+Installs to ~/.agents/skills/curio/ (opencode, codex, pi.dev) and
+~/.claude/skills/curio/ (claude-code) if detected.
+Run without flags for interactive mode.`,
+	Args: cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		dir, _ := cmd.Flags().GetString("dir")
+		project, _ := cmd.Flags().GetBool("project")
+		agentsOnly, _ := cmd.Flags().GetBool("agents-only")
+		claudeOnly, _ := cmd.Flags().GetBool("claude-only")
+		return runInstall(dir, project, agentsOnly, claudeOnly)
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(skillsCmd)
+	skillsCmd.AddCommand(installCmd)
+	skillsCmd.AddCommand(uninstallCmd)
+	installCmd.Flags().String("dir", "", "install to a specific directory")
+	installCmd.Flags().Bool("project", false, "install to the current project instead of globally")
+	installCmd.Flags().Bool("agents-only", false, "only install to ~/.agents/skills/ (skip claude)")
+	installCmd.Flags().Bool("claude-only", false, "only install to ~/.claude/skills/ (skip agents)")
+}
 
 // ---- Agent detection ----
 

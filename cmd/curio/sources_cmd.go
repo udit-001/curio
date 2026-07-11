@@ -4,10 +4,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 // ---- Sources command ----
+
+var sourcesCmd = &cobra.Command{
+	Use:   "sources",
+	Short: "List all image sources",
+	Long:  "List all 17 image sources with description and availability.",
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		asJSON, _ := cmd.Flags().GetBool("json")
+		runSources(asJSON)
+	},
+}
+
+func init() {
+	sourcesCmd.Flags().Bool("json", false, "machine-readable output")
+	rootCmd.AddCommand(sourcesCmd)
+}
 
 type sourceInfo struct {
 	Name          string   `json:"name"`
@@ -57,12 +74,4 @@ func runSources(asJSON bool) {
 		}
 		fmt.Printf("  %s %-14s %s\n", mark, info.Name, info.Description)
 	}
-}
-
-func availableSources() string {
-	names := make([]string, 0, len(sources))
-	for name := range sources {
-		names = append(names, name)
-	}
-	return strings.Join(names, ", ")
 }

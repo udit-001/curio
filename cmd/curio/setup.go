@@ -5,7 +5,27 @@ import (
 	"fmt"
 	"net/url"
 	"time"
+
+	"github.com/spf13/cobra"
 )
+
+// ---- Setup command ----
+
+var setupCmd = &cobra.Command{
+	Use:   "setup",
+	Short: "Interactive API key wizard",
+	Long: `Configures API keys for key-required sources. Opens signup pages,
+prompts for keys, and tests them immediately. Keys are stored in
+~/.config/curio/config.toml (or OS equivalent).`,
+	Args: cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		runSetup()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(setupCmd)
+}
 
 // ---- Stage table ----
 

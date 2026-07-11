@@ -5,10 +5,30 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 const modulePath = "github.com/udit-001/curio"
 const cmdPath = modulePath + "/cmd/curio"
+
+var upgradeCmd = &cobra.Command{
+	Use:   "upgrade",
+	Short: "Upgrade curio to the latest version",
+	Long:  `Upgrade curio by running 'go install'. Checks the Go proxy for the latest version and compiles from source.`,
+	Args:  cobra.NoArgs,
+	Run: func(cmd *cobra.Command, args []string) {
+		force, _ := cmd.Flags().GetBool("force")
+		noSkills, _ := cmd.Flags().GetBool("no-skills")
+		runUpgrade(force, noSkills)
+	},
+}
+
+func init() {
+	upgradeCmd.Flags().BoolP("force", "f", false, "reinstall even if already up to date")
+	upgradeCmd.Flags().Bool("no-skills", false, "skip skill file update check")
+	rootCmd.AddCommand(upgradeCmd)
+}
 
 func runUpgrade(force, noSkills bool) {
 	goPath, err := exec.LookPath("go")

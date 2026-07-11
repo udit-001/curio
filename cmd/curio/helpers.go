@@ -7,62 +7,6 @@ import (
 	"strings"
 )
 
-// Shared helpers used across multiple source files.
-
-// ---- Command suggestion ----
-
-var knownCommands = []string{"search", "sources", "setup", "skills", "upgrade", "version", "help"}
-
-func suggestCommand(input string) string {
-	best := ""
-	bestDist := 3
-	for _, cmd := range knownCommands {
-		dist := editDistance(input, cmd)
-		if dist < bestDist {
-			best = cmd
-			bestDist = dist
-		}
-	}
-	return best
-}
-
-func editDistance(a, b string) int {
-	la, lb := len(a), len(b)
-	if la == 0 {
-		return lb
-	}
-	if lb == 0 {
-		return la
-	}
-	prev := make([]int, lb+1)
-	curr := make([]int, lb+1)
-	for j := 0; j <= lb; j++ {
-		prev[j] = j
-	}
-	for i := 1; i <= la; i++ {
-		curr[0] = i
-		for j := 1; j <= lb; j++ {
-			cost := 1
-			if a[i-1] == b[j-1] {
-				cost = 0
-			}
-			curr[j] = min3(prev[j]+1, curr[j-1]+1, prev[j-1]+cost)
-		}
-		prev, curr = curr, prev
-	}
-	return prev[lb]
-}
-
-func min3(a, b, c int) int {
-	if b < a {
-		a = b
-	}
-	if c < a {
-		a = c
-	}
-	return a
-}
-
 // ---- Semver ----
 
 func semverCompare(a, b string) int {
@@ -103,17 +47,6 @@ func parseSemver(v string) []int {
 		nums = append(nums, n)
 	}
 	return nums
-}
-
-// ---- String utilities ----
-
-func hasHelp(args []string) bool {
-	for _, a := range args {
-		if a == "--help" || a == "-h" {
-			return true
-		}
-	}
-	return false
 }
 
 // ---- Shared utilities ----
