@@ -107,6 +107,17 @@ func parseSemver(v string) []int {
 
 // ---- String utilities ----
 
+func hasHelp(args []string) bool {
+	for _, a := range args {
+		if a == "--help" || a == "-h" {
+			return true
+		}
+	}
+	return false
+}
+
+// ---- Shared utilities ----
+
 var htmlTagRe = regexp.MustCompile(`<[^>]+>`)
 
 func stripHTML(s string) string {

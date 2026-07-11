@@ -22,6 +22,10 @@ func main() {
 	// Subcommands
 	switch os.Args[1] {
 	case "search":
+		if hasHelp(os.Args[2:]) {
+			printSearchHelp()
+			return
+		}
 		args := os.Args[2:]
 		query, opts, err := parseArgs(args)
 		if err != nil {
@@ -58,6 +62,15 @@ func main() {
 		}
 		return
 	case "sources":
+		if hasHelp(os.Args[2:]) {
+			fmt.Println(`curio sources — list all image sources
+
+Usage: curio sources [--json]
+
+Flags:
+  --json    machine-readable output`)
+			return
+		}
 		asJSON := false
 		for _, arg := range os.Args[2:] {
 			if arg == "--json" {
@@ -67,36 +80,111 @@ func main() {
 		runSources(asJSON)
 		return
 	case "setup":
+		if hasHelp(os.Args[2:]) {
+			fmt.Println(`curio setup — interactive API key wizard
+
+Usage: curio setup
+
+Configures API keys for key-required sources. Opens signup pages,
+prompts for keys, and tests them immediately. Keys are stored in
+~/.config/curio/config.toml (or OS equivalent).`)
+			return
+		}
 		runSetup()
 		return
 	case "install", "skills":
-		// Handle: curio install, curio skills install, curio skills uninstall
-		rest := os.Args[2:]
-		if len(os.Args) > 2 && os.Args[2] == "install" {
-			rest = os.Args[3:]
-		} else if len(os.Args) > 2 && os.Args[2] == "uninstall" {
-			allUninstall := false
-			for _, arg := range os.Args[3:] {
-				if arg == "--all" {
-					allUninstall = true
-				}
+		subArgs := os.Args[2:]
+		// If called as 'curio skills', check for subcommand
+		if os.Args[1] == "skills" {
+			if len(subArgs) == 0 || subArgs[0] == "--help" || subArgs[0] == "-h" {
+				printSkillsHelp()
+				return
 			}
-			runUninstall(allUninstall)
+			switch subArgs[0] {
+			case "install":
+				if hasHelp(os.Args[3:]) {
+					fmt.Println(`curio skills install — install skill files for AI agents
+
+Usage: curio skills install [flags]
+
+Flags:
+  --dir DIR        install to a specific directory
+  --project        install to the current project instead of globally
+  --agents-only    only install to ~/.agents/skills/ (skip claude)
+  --claude-only    only install to ~/.claude/skills/ (skip agents)`)
+					return
+				}
+				rest := os.Args[3:]
+				dir := ""
+				project := false
+				agentsOnly := false
+				claudeOnly := false
+				for i := 0; i < len(rest); i++ {
+					if rest[i] == "--dir" && i+1 < len(rest) {
+						dir = rest[i+1]
+						i++
+					} else if rest[i] == "--project" {
+						project = true
+					} else if rest[i] == "--agents-only" {
+						agentsOnly = true
+					} else if rest[i] == "--claude-only" {
+						claudeOnly = true
+					}
+				}
+				if err := runInstall(dir, project, agentsOnly, claudeOnly); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+					os.Exit(1)
+				}
+				return
+			case "uninstall":
+				if hasHelp(os.Args[3:]) {
+					fmt.Println(`curio skills uninstall — remove curio skill files
+
+Usage: curio skills uninstall [--all]
+
+Flags:
+  --all    remove all installs without prompting`)
+					return
+				}
+				allUninstall := false
+				for _, arg := range os.Args[3:] {
+					if arg == "--all" {
+						allUninstall = true
+					}
+				}
+				runUninstall(allUninstall)
+				return
+			default:
+				printSkillsHelp()
+				return
+			}
+		}
+		// Called as 'curio install'
+		if hasHelp(subArgs) {
+			fmt.Println(`curio skills install — install skill files for AI agents
+
+Usage: curio install [flags]
+
+Flags:
+  --dir DIR        install to a specific directory
+  --project        install to the current project instead of globally
+  --agents-only    only install to ~/.agents/skills/ (skip claude)
+  --claude-only    only install to ~/.claude/skills/ (skip agents)`)
 			return
 		}
 		dir := ""
 		project := false
 		agentsOnly := false
 		claudeOnly := false
-		for i := 0; i < len(rest); i++ {
-			if rest[i] == "--dir" && i+1 < len(rest) {
-				dir = rest[i+1]
+		for i := 0; i < len(subArgs); i++ {
+			if subArgs[i] == "--dir" && i+1 < len(subArgs) {
+				dir = subArgs[i+1]
 				i++
-			} else if rest[i] == "--project" {
+			} else if subArgs[i] == "--project" {
 				project = true
-			} else if rest[i] == "--agents-only" {
+			} else if subArgs[i] == "--agents-only" {
 				agentsOnly = true
-			} else if rest[i] == "--claude-only" {
+			} else if subArgs[i] == "--claude-only" {
 				claudeOnly = true
 			}
 		}
@@ -109,6 +197,16 @@ func main() {
 		printVersion()
 		return
 	case "upgrade":
+		if hasHelp(os.Args[2:]) {
+			fmt.Println(`curio upgrade — upgrade curio to the latest version
+
+Usage: curio upgrade [flags]
+
+Flags:
+  --force, -f      reinstall even if already up to date
+  --no-skills      skip skill file update check`)
+			return
+		}
 		force := false
 		noSkills := false
 		for _, arg := range os.Args[2:] {
@@ -316,16 +414,39 @@ Usage:
   curio upgrade [--force] [--no-skills]
   curio version
 
+Run 'curio <command> --help' for command-specific help.`)
+}
+
+func printSearchHelp() {
+	fmt.Println(`curio search — search free-licensed image sources
+
+Usage: curio search "QUERY" [options]
+
 Options:
   -n N          results (default 5)
-  -s SOURCE     source: openverse, nasa, wikimedia, smithsonian, met, loc, wellcome, phylopic, europeana, wikipedia, pexels, pixabay, unsplash, bhl, archive, gbif, va, all
-  -l LICENSE    license: free (default, no attribution) | any
+  -s SOURCE     source name or 'all' (run 'curio sources' to see all)
+  -l LICENSE    free (default, no attribution) | any (include CC-BY)
   -w N          max width px
   --full        full-res original
-  -d            download to scratch
-  -o DIR        output dir (default: unique temp dir per run)
-  --json        machine-readable output (recommended for agents)
-  --quiet       download mode: print only paths, no progress (for scripting)`)
+  -d            download to scratch dir
+  -o DIR        output dir (overrides scratch)
+  --json        machine-readable output
+  --quiet       download mode: print only paths, no progress
+
+Examples:
+  curio search "cats" -s openverse -n 3
+  curio search "cats" -d --json
+  curio search "mars surface" -s nasa -d -o ./public/hero`)
+}
+
+func printSkillsHelp() {
+	fmt.Println(`curio skills — manage curio skill files for AI agents
+
+Subcommands:
+  curio skills install [flags]     Install skill files to agent directories
+  curio skills uninstall [--all]   Remove curio skill files
+
+Run 'curio skills install --help' or 'curio skills uninstall --help' for details.`)
 }
 
 func printVersion() {
